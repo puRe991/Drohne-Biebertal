@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/content.php';
 
 function render_header(array $c, string $title = ''): void { ?>
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= e($title ? "$title – " : '') ?><?= e($c['settings']['siteName']) ?> · <?= e($c['settings']['subtitle']) ?></title><link rel="stylesheet" href="<?= asset('styles.css') ?>"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= e($title ? "$title – " : '') ?><?= e($c['settings']['siteName']) ?> · <?= e($c['settings']['subtitle']) ?></title><link rel="stylesheet" href="<?= asset('styles.css') ?>"><?php if ((parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/') === '/admin'): ?><link rel="stylesheet" href="<?= asset('admin.css') ?>"><?php endif; ?></head><body>
 <header class="top"><a class="brand" href="/"><div class="crest">⚒</div><div><b><?= e($c['settings']['siteName']) ?></b><span><?= e($c['settings']['subtitle']) ?></span></div></a><nav><?php foreach ([['/','Start'],['/einsaetze','Einsätze'],['/technik','Technik'],['/team','Team'],['/ausbildung','Ausbildung'],['/galerie','Galerie'],['/kontakt','Kontakt']] as [$href,$label]): ?><a href="<?= e($href) ?>"><?= e($label) ?></a><?php endforeach; ?></nav><a class="emergency" href="tel:112">☎ Notruf<br><b>112</b></a></header>
 <?php }
 
