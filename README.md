@@ -28,7 +28,7 @@ Danach öffnen:
 
 ### 32-bit-Windows-Fallback
 
-Der Fallback ist nicht mehr nur eine statische Vorschau: Er enthält Login, Session-Cookie, CSRF-Prüfung, Einsatz-Anlage und JSON-Bearbeitung für `data/site.json`. Damit sind lokale Inhaltsänderungen auch auf 32-bit-Windows möglich. Bewusst nicht enthalten sind Next.js-spezifische Funktionen wie App-Router-Rendering, Server Actions, Image Optimization, Build und produktionsnahes Deployment; dafür weiterhin 64-bit Node.js nutzen.
+Der Fallback ist nicht mehr nur eine statische Vorschau: Er enthält das öffentliche Website-Layout für Startseite, Einsätze inklusive Detailseiten, Technik, Team, Ausbildung, Galerie, Kontakt, Impressum und Datenschutz sowie Login, Session-Cookie, CSRF-Prüfung, Einsatz-Anlage und JSON-Bearbeitung für `data/site.json`. Damit sind lokale Inhaltsänderungen auch auf 32-bit-Windows möglich. `FORCE_LEGACY_IA32=1 npm run build` erzeugt zusätzlich `.next-legacy/server.mjs` als schlanken Node.js-Entrypoint für 32-bit-Deployments ohne Next.js-SWC. Bewusst nicht enthalten sind Next.js-spezifische Funktionen wie App-Router-Rendering, Server Actions und Image Optimization; dafür weiterhin 64-bit Node.js, WSL, Docker oder das reguläre Deployment nutzen.
 
 ## Umgebungsvariablen
 
