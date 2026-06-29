@@ -21,13 +21,14 @@ Danach öffnen:
 ## Qualitätssicherung
 
 ```bash
+npm run check:merge-status
 npm run check:branch
 npm run test
 npm run lint
 npm run build
 ```
 
-Die Tests prüfen das Content-Schema, die Slug-Erzeugung, die dokumentierten initialen Admin-Zugangsdaten und die Produktionsanforderung für `SESSION_SECRET`. `check:branch` prüft ohne Ausnahmen alle versionierten Dateien auf unaufgelöste Merge-Einträge, Konfliktmarker und Whitespace-Fehler in Diffs.
+Die Tests prüfen das Content-Schema, die Slug-Erzeugung, die dokumentierten initialen Admin-Zugangsdaten und die Produktionsanforderung für `SESSION_SECRET`. `check:merge-status` prüft die bekannten Konfliktdateien und den Git-Index. `check:branch` prüft zusätzlich ohne Ausnahmen alle versionierten Dateien auf Konfliktmarker und Whitespace-Fehler in Diffs.
 
 ## Umgebungsvariablen
 

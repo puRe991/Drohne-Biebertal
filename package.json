@@ -7,7 +7,8 @@
     "test": "tsx --test tests/*.test.ts",
     "check:conflicts": "node scripts/check-conflicts.mjs",
     "check": "npm run check:branch && npm run test && npm run lint && npm run build",
-    "check:branch": "npm run check:conflicts && git diff --check"
+    "check:branch": "npm run check:merge-status && npm run check:conflicts && git diff --check",
+    "check:merge-status": "node scripts/check-merge-status.mjs"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
