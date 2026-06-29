@@ -7,11 +7,19 @@ import {
   saveJsonAction,
 } from "./actions";
 
+function safeDecode(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return "Unbekannte Admin-Meldung.";
+  }
+}
+
 function getAdminMessage(code?: string) {
   if (!code) return null;
   if (code === "login") return "Login fehlgeschlagen.";
   if (code === "auth") return "Bitte melden Sie sich erneut an.";
-  return decodeURIComponent(code);
+  return safeDecode(code);
 }
 
 export default async function Admin({
@@ -64,8 +72,8 @@ export default async function Admin({
       <h1>CMS Backend</h1>
       <p>
         Angemeldet als {session.user.email} ({session.user.role}). Inhalte
-        werden direkt in <code>data/site.json</code> gespeichert. Für Produktion:
-        Datenbank/Objektspeicher aktivieren.
+        werden direkt in <code>data/site.json</code> gespeichert. Für
+        Produktion: Datenbank/Objektspeicher aktivieren.
       </p>
       {sp.saved && <p className="redtext">Gespeichert.</p>}
       {message && <p className="redtext">{message}</p>}
@@ -97,9 +105,10 @@ export default async function Admin({
       <div id="json" className="card" style={{ marginTop: 24 }}>
         <h2>Redaktionelle Inhalte bearbeiten</h2>
         <p>
-          Dieses robuste JSON-Formular ist die Basis für alle Bereiche (Einsätze,
-          Team, Technik, Galerie, Seiteninhalte, Einstellungen). Validierung
-          verhindert ungültige Pflichtfelder, Datumswerte und Bild-URLs.
+          Dieses robuste JSON-Formular ist die Basis für alle Bereiche
+          (Einsätze, Team, Technik, Galerie, Seiteninhalte, Einstellungen).
+          Validierung verhindert ungültige Pflichtfelder, Datumswerte und
+          Bild-URLs.
         </p>
         <form action={saveJsonAction}>
           <textarea

@@ -4,7 +4,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "check:conflicts": "node scripts/check-conflicts.mjs",
+    "check": "npm run check:conflicts && npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

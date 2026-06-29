@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createSlug, formatDate, getContent } from "../lib/content";
 import { IncidentSchema, SiteContentSchema } from "../lib/content-schema";
-import { verifyLogin } from "../lib/auth";
+import { getSessionOptions, verifyLogin } from "../lib/auth";
 
 test("seed content matches the CMS schema", () => {
   assert.doesNotThrow(() => SiteContentSchema.parse(getContent()));
@@ -43,4 +43,23 @@ test("documented default admin credentials match the fallback hash", async () =>
   );
   assert.equal(user?.role, "Administrator");
   assert.equal(user?.mustChangePassword, true);
+});
+
+test("production sessions require an explicit secret", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousSecret = process.env.SESSION_SECRET;
+
+  try {
+    process.env.NODE_ENV = "production";
+    delete process.env.SESSION_SECRET;
+
+    assert.throws(() => getSessionOptions(), /SESSION_SECRET/);
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+    if (previousSecret === undefined) {
+      delete process.env.SESSION_SECRET;
+    } else {
+      process.env.SESSION_SECRET = previousSecret;
+    }
+  }
 });

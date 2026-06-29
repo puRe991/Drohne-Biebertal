@@ -21,12 +21,13 @@ Danach öffnen:
 ## Qualitätssicherung
 
 ```bash
+npm run check:conflicts
 npm run test
 npm run lint
 npm run build
 ```
 
-Die Tests prüfen das Content-Schema, die Slug-Erzeugung und die dokumentierten initialen Admin-Zugangsdaten.
+Die Tests prüfen das Content-Schema, die Slug-Erzeugung, die dokumentierten initialen Admin-Zugangsdaten und die Produktionsanforderung für `SESSION_SECRET`. `check:conflicts` bricht ab, sobald Merge-Konfliktmarker im Arbeitsbaum stehen.
 
 ## Umgebungsvariablen
 
