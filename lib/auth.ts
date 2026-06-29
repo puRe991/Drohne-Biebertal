@@ -25,7 +25,7 @@ export async function verifyLogin(email: string, password: string) {
   const adminEmail =
     process.env.ADMIN_EMAIL || "admin@feuerwehr-biebertal.local";
   const defaultHash =
-    "$2a$10$gvxeB/hw2ffksuuOPK7eX.D2BQt3AKy6.4PqpkZ6V66RIpEEN45oq"; // Drohne112!
+    "$2a$10$H2fid/BSH2/1URkVaThQqe.Kge1Hh5M5ASw7ZriaWsbQ.us3nuFCS"; // Drohne112!
   if (email.toLowerCase() !== adminEmail.toLowerCase()) return null;
   const ok = await bcrypt.compare(
     password,

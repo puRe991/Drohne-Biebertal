@@ -18,6 +18,16 @@ Danach öffnen:
 - Öffentliche Website: <http://localhost:3000>
 - CMS-Backend: <http://localhost:3000/admin>
 
+## Qualitätssicherung
+
+```bash
+npm run test
+npm run lint
+npm run build
+```
+
+Die Tests prüfen das Content-Schema, die Slug-Erzeugung und die dokumentierten initialen Admin-Zugangsdaten.
+
 ## Umgebungsvariablen
 
 Für lokale Tests funktionieren sichere Defaults nur eingeschränkt. Für Produktion zwingend setzen:
