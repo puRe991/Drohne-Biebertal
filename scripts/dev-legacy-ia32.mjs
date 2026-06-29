@@ -199,20 +199,68 @@ function card(title, text) {
   return `<article class="card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`;
 }
 
-function pageShell(title, body) {
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>:root{color-scheme:dark;--bg:#08111f;--panel:#102033;--text:#eef5ff;--muted:#b7c4d8;--brand:#ef4444;--line:#26384f}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#08111f,#13243a);color:var(--text);line-height:1.6}a{color:inherit}.wrap{width:min(1120px,92vw);margin:auto}.hero{padding:56px 0 40px}.nav{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}.brand{font-weight:800}.badge,.btn,button{display:inline-block;background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.45);padding:8px 12px;border-radius:999px;font-size:14px;text-decoration:none}.btn,button{cursor:pointer;background:#ef4444;color:white;font-weight:700}.hero h1{font-size:clamp(44px,10vw,112px);line-height:.9;margin:22px 0 12px}.hero p{max-width:760px;color:var(--muted);font-size:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:24px 0 44px}.formgrid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.card{background:rgba(16,32,51,.88);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.18)}.card h3{margin:0 0 8px}.card p{margin:0;color:var(--muted)}.section{padding:20px 0}.section h2{font-size:32px;margin:0 0 16px}.image{width:100%;height:170px;object-fit:cover;border-radius:14px;margin-bottom:12px;background:#17263a}.notice{border-left:4px solid var(--brand);background:rgba(239,68,68,.12);padding:14px 16px;border-radius:12px;margin:18px 0;color:#fee2e2}.footer{border-top:1px solid var(--line);padding:28px 0;margin-top:30px;color:var(--muted)}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;background:#0b1727;color:var(--text);padding:12px;font:inherit}textarea{min-height:420px}.adminbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:24px 0}.redtext{color:#fecaca}</style></head><body><div class="wrap">${body}</div></body></html>`;
+const navItems = [
+  ['/', 'Start'],
+  ['/einsaetze', 'Einsaetze'],
+  ['/technik', 'Technik'],
+  ['/team', 'Team'],
+  ['/ausbildung', 'Ausbildung'],
+  ['/galerie', 'Galerie'],
+  ['/kontakt', 'Kontakt'],
+];
+
+function formatDate(value) {
+  try {
+    return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`));
+  } catch {
+    return String(value ?? '');
+  }
 }
 
-function renderPage(site) {
-  const settings = site.settings ?? {};
-  const pages = site.pages ?? {};
-  const areas = safeList(site.areas);
-  const incidents = safeList(site.incidents);
-  const team = safeList(site.team);
-  const equipment = safeList(site.equipment);
-  const gallery = safeList(site.gallery);
+function image(src, alt = '') {
+  return `<img class="image" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy">`;
+}
 
-  return pageShell(`${settings.siteName} – ${settings.subtitle}`, `<nav class="nav"><div class="brand">${escapeHtml(settings.siteName)} · ${escapeHtml(settings.subtitle)}</div><a class="badge" href="/admin">CMS</a></nav><header class="hero"><span class="badge">${escapeHtml(pages.heroKicker)}</span><h1>${escapeHtml(pages.heroHeadline)}</h1><p>${escapeHtml(pages.heroSubline || settings.claim)}</p><div class="notice">32-bit-Windows-Modus aktiv: Oeffentliche Website und Basis-CMS laufen lokal ohne Next.js-SWC. Fuer produktionsnahe Next.js-Features, Build und Deployment weiterhin 64-bit Node.js nutzen.</div></header><section class="section"><h2>Einsatzbereiche</h2><div class="grid">${areas.map((area) => card(area.title, area.text)).join('')}</div></section><section class="section"><h2>Aktuelle Einsaetze</h2><div class="grid">${incidents.map((incident) => `<article class="card"><img class="image" src="${escapeHtml(incident.image)}" alt=""><h3>${escapeHtml(incident.title)}</h3><p>${escapeHtml(incident.date)} · ${escapeHtml(incident.place)}</p><p>${escapeHtml(incident.description)}</p></article>`).join('')}</div></section><section class="section"><h2>Team</h2><div class="grid">${team.map((member) => `<article class="card"><img class="image" src="${escapeHtml(member.image)}" alt=""><h3>${escapeHtml(member.name)}</h3><p>${escapeHtml(member.role)} · ${escapeHtml(member.qualification)}</p></article>`).join('')}</div></section><section class="section"><h2>Technik</h2><div class="grid">${equipment.map((item) => `<article class="card"><img class="image" src="${escapeHtml(item.image)}" alt=""><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></article>`).join('')}</div></section><section class="section"><h2>Galerie</h2><div class="grid">${gallery.map((item) => `<article class="card"><img class="image" src="${escapeHtml(item.url)}" alt=""><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.category)}</p></article>`).join('')}</div></section><footer class="footer"><p>${escapeHtml(settings.address)}</p><p>${escapeHtml(settings.email)} · ${escapeHtml(settings.phone)}</p></footer>`);
+function pageShell(title, body, site = null) {
+  const settings = site?.settings ?? {};
+  const socials = Object.entries(settings.socials ?? {}).map(([label, href]) => `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`).join('');
+  const nav = navItems.map(([href, label]) => `<a href="${href}">${label}</a>`).join('');
+  const chrome = site ? `<header class="top"><a class="brand" href="/"><div class="crest">⚒</div><div><b>${escapeHtml(settings.siteName)}</b><span>${escapeHtml(settings.subtitle)}</span></div></a><nav>${nav}</nav><a class="emergency" href="tel:112">Notruf<br><b>112</b></a></header>` : '';
+  const footer = site ? `<footer class="footer"><div><div class="brand footer-brand"><div class="crest">⚒</div><div><b>${escapeHtml(settings.siteName)}</b><span>${escapeHtml(settings.subtitle)}</span></div></div><p>${escapeHtml(settings.claim)}</p></div><div><h3>Kontakt</h3><p>${escapeHtml(settings.address)}</p><p>${escapeHtml(settings.email)}</p><p>${escapeHtml(settings.phone)}</p></div><div><h3>Folge uns</h3>${socials}</div><div><h3>Wichtige Links</h3><a href="/datenschutz">Datenschutzerklaerung</a><a href="/impressum">Impressum</a><a href="/admin">Admin</a></div><small>© 2026 Freiwillige Feuerwehr Biebertal – Fachgruppe Drohne</small></footer>` : '';
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>:root{color-scheme:dark;--bg:#07111f;--panel:#0f1f33;--panel2:#142844;--text:#f4f7fb;--muted:#b7c4d8;--brand:#ef4444;--brand2:#f97316;--line:#27405f}*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:radial-gradient(circle at 15% 0,#233b5f 0,#07111f 32%,#050914 100%);color:var(--text);line-height:1.6}a{color:inherit;text-decoration:none}.wrap,main{width:min(1180px,92vw);margin:auto}.top{width:min(1180px,92vw);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;background:rgba(7,17,31,.88);backdrop-filter:blur(14px)}.brand{display:flex;align-items:center;gap:12px}.brand b{display:block}.brand span{display:block;color:var(--muted);font-size:14px}.crest{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));font-weight:900}.top nav{display:flex;flex-wrap:wrap;gap:14px;color:var(--muted)}.top nav a:hover,.redtext{color:#fecaca}.emergency,.badge,.btn,button{display:inline-block;border-radius:999px;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#fecaca;padding:8px 13px;font-size:14px}.btn,button{background:#ef4444;color:white;font-weight:800;cursor:pointer}.btn.secondary{background:#142844;color:#fff;border-color:var(--line)}.hero{min-height:58vh;display:grid;align-items:center;padding:70px 0}.hero h1{font-size:clamp(54px,13vw,150px);line-height:.82;margin:22px 0 16px;letter-spacing:-.08em}.hero p{max-width:820px;color:var(--muted);font-size:20px}.grid{display:grid;gap:20px}.cards4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.cols3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.formgrid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.card,.cta,.mapbox{background:linear-gradient(180deg,rgba(20,40,68,.96),rgba(12,25,42,.96));border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 22px 70px rgba(0,0,0,.24)}.section{padding:34px 0}.section-title,.section h1,.section h2{font-size:clamp(28px,4vw,44px);line-height:1.05;margin:0 0 18px}.card h3{margin:0 0 8px}.card p{color:var(--muted)}.image,.equip-img{width:100%;height:220px;object-fit:cover;border-radius:18px;background:#17263a}.avatar{width:82px;height:82px;border-radius:50%;object-fit:cover}.incident{display:grid;grid-template-columns:130px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}.incident img{width:130px;height:90px;object-fit:cover;border-radius:14px}.features{padding-left:18px;color:var(--muted)}.mapcta{grid-template-columns:1.35fr .65fr;margin-top:34px}.outline-map{min-height:190px;border:1px dashed #55708f;border-radius:22px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:20px}.notice{border-left:4px solid var(--brand);background:rgba(239,68,68,.12);padding:14px 16px;border-radius:12px;margin:18px 0;color:#fee2e2}.footer{width:min(1180px,92vw);margin:46px auto 0;border-top:1px solid var(--line);padding:30px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px;color:var(--muted)}.footer a{display:block}.footer small{grid-column:1/-1}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;background:#0b1727;color:var(--text);padding:12px;font:inherit}textarea{min-height:420px}.adminbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:24px 0}.redtext{color:#fecaca}@media(max-width:760px){.top{position:static;align-items:flex-start;flex-direction:column}.incident{grid-template-columns:1fr}.incident img{width:100%;height:180px}.mapcta{grid-template-columns:1fr}}</style></head><body>${chrome}<main>${body}</main>${footer}</body></html>`;
+}
+
+function renderHome(site) {
+  const c = site;
+  const primaryEquipment = safeList(c.equipment)[0] ?? {};
+  return `<section class="hero"><div><div class="badge">${escapeHtml(c.pages.heroKicker)}</div><h1>${escapeHtml(c.pages.heroHeadline)}</h1><p>${escapeHtml(c.pages.heroSubline)}</p><p><a class="btn" href="/technik">Mehr erfahren</a> <a class="btn secondary" href="/einsaetze">Aktuelle Einsaetze</a></p><div class="notice">32-bit-Modus: Diese deploybare Legacy-Runtime rendert Website und CMS ohne Next.js-SWC.</div></div></section><section class="section"><h2 class="section-title">Unsere Einsatzbereiche</h2><div class="grid cards4">${safeList(c.areas).map((a)=>card(a.title,a.text)).join('')}</div></section><section class="section grid cols3"><div class="card"><h2>Aktuelle Einsaetze</h2>${safeList(c.incidents).map(renderIncidentListItem).join('')}<a class="redtext" href="/einsaetze">Alle Einsaetze ansehen →</a></div><div class="card"><h2>Unser Team</h2><div class="grid cards4">${safeList(c.team).map((m)=>`<div>${image(m.image,m.name)}<b>${escapeHtml(m.name)}</b><p>${escapeHtml(m.role)}<br>${escapeHtml(m.qualification)}</p></div>`).join('')}</div><a class="redtext" href="/team">Mehr ueber unser Team →</a></div><div class="card"><h2>Unsere Technik</h2>${image(primaryEquipment.image,primaryEquipment.name)}<h3>${escapeHtml(primaryEquipment.name)}</h3><ul class="features">${safeList(primaryEquipment.features).map((f)=>`<li>${escapeHtml(f)}</li>`).join('')}</ul><a class="redtext" href="/technik">Gesamte Ausruestung ansehen →</a></div></section><section class="section grid mapcta"><div class="mapbox"><h2>Einsatzgebiet Biebertal</h2><div class="outline-map">Krumbach · Frankenbach · Rodheim-Bieber · Fellingshausen · Vetzberg</div></div><div class="cta"><h2>${escapeHtml(c.pages.ctaTitle)}</h2><p>${escapeHtml(c.pages.ctaText)}</p><h3>Komm in unser Team!</h3><a class="btn" href="/kontakt">Jetzt mitmachen</a></div></section>`;
+}
+
+function renderIncidentListItem(incident) {
+  return `<a class="incident" href="/einsaetze/${escapeHtml(incident.id)}">${image(incident.image, incident.title)}<div><span class="badge">${escapeHtml(incident.category || 'Einsatz')}</span><small style="float:right">${escapeHtml(formatDate(incident.date))}</small><b style="display:block">${escapeHtml(incident.title)}</b><span>${escapeHtml(incident.place)}</span><p>${escapeHtml(incident.description)}</p></div></a>`;
+}
+
+function renderCollection(title, items, renderer) {
+  return `<section class="section"><h1>${escapeHtml(title)}</h1><div class="grid cards4">${safeList(items).map(renderer).join('')}</div></section>`;
+}
+
+function renderRoute(site, pathname) {
+  if (pathname === '/') return pageShell(`${site.settings.siteName} – ${site.settings.subtitle}`, renderHome(site), site);
+  if (pathname === '/einsaetze') return pageShell('Einsaetze', renderCollection('Einsaetze', site.incidents, (i)=>`<article class="card">${image(i.image,i.title)}<h3>${escapeHtml(i.title)}</h3><p>${escapeHtml(formatDate(i.date))} · ${escapeHtml(i.place)}</p><p>${escapeHtml(i.description)}</p><a class="redtext" href="/einsaetze/${escapeHtml(i.id)}">Details →</a></article>`), site);
+  if (pathname.startsWith('/einsaetze/')) {
+    const id = decodeURIComponent(pathname.split('/').pop() || '');
+    const incident = safeList(site.incidents).find((item) => item.id === id);
+    if (!incident) return null;
+    return pageShell(incident.title, `<section class="section"><a class="redtext" href="/einsaetze">← Zurueck</a><h1>${escapeHtml(incident.title)}</h1>${image(incident.image,incident.title)}<p><b>${escapeHtml(formatDate(incident.date))}</b> · ${escapeHtml(incident.place)} · ${escapeHtml(incident.duration)}</p><p>${escapeHtml(incident.description)}</p></section>`, site);
+  }
+  if (pathname === '/technik') return pageShell('Technik', renderCollection('Technik', site.equipment, (e)=>`<article class="card">${image(e.image,e.name)}<h3>${escapeHtml(e.name)}</h3><p>${escapeHtml(e.description)}</p><ul class="features">${safeList(e.features).map((f)=>`<li>${escapeHtml(f)}</li>`).join('')}</ul></article>`), site);
+  if (pathname === '/team') return pageShell('Team', renderCollection('Team', site.team, (m)=>`<article class="card">${image(m.image,m.name)}<h3>${escapeHtml(m.name)}</h3><p>${escapeHtml(m.role)}<br>${escapeHtml(m.qualification)}</p></article>`), site);
+  if (pathname === '/galerie') return pageShell('Galerie', renderCollection('Galerie', site.gallery, (g)=>`<article class="card">${image(g.url,g.title)}<h3>${escapeHtml(g.title)}</h3><p>${escapeHtml(g.category)}</p></article>`), site);
+  if (pathname === '/ausbildung') return pageShell('Ausbildung', `<section class="section"><h1>Ausbildung</h1><div class="card"><p>${escapeHtml(site.pages.training)}</p></div></section>`, site);
+  if (pathname === '/kontakt') return pageShell('Kontakt', `<section class="section"><h1>Kontakt</h1><div class="card"><p>${escapeHtml(site.pages.contactIntro)}</p><p><b>E-Mail:</b> ${escapeHtml(site.settings.email)}<br><b>Telefon:</b> ${escapeHtml(site.settings.phone)}<br><b>Adresse:</b> ${escapeHtml(site.settings.address)}</p></div></section>`, site);
+  if (pathname === '/impressum') return pageShell('Impressum', `<section class="section"><h1>Impressum</h1><div class="card"><p>${escapeHtml(site.settings.address)}</p><p>${escapeHtml(site.settings.email)} · ${escapeHtml(site.settings.phone)}</p><p class="notice">Platzhalter: Vor Live-Gang rechtlich pruefen.</p></div></section>`, site);
+  if (pathname === '/datenschutz') return pageShell('Datenschutz', `<section class="section"><h1>Datenschutzerklaerung</h1><div class="card"><p>Diese Prototyp-Seite speichert redaktionelle Inhalte lokal und nutzt ein technisch notwendiges Admin-Session-Cookie.</p><p class="notice">Platzhalter: Vor Live-Gang rechtlich pruefen.</p></div></section>`, site);
+  return null;
 }
 
 async function renderAdmin(request, url) {
@@ -345,8 +393,14 @@ const server = createServer(async (request, response) => {
     }
 
     const site = await loadSite();
+    const rendered = renderRoute(site, url.pathname);
+    if (!rendered) {
+      response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      response.end('Nicht gefunden');
+      return;
+    }
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    response.end(renderPage(site));
+    response.end(rendered);
   } catch (error) {
     const status = error?.statusCode || (error?.code === 'ENOENT' ? 404 : 500);
     response.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
