@@ -1,49 +1,59 @@
 # Feuerwehr Biebertal – Fachgruppe Drohne
 
-Produktionsnaher Website-Prototyp mit öffentlicher Website und geschütztem CMS-Backend für die Fachgruppe Drohne.
+32-bit-fähige Website mit integriertem Flat-File-CMS für die Fachgruppe Drohne. Der bisherige Node.js-/Next.js-Stack wurde durch eine klassische PHP-Anwendung ersetzt, damit Betrieb und Redaktion auch auf 32-bit-Systemen und einfachem Webhosting möglich sind.
 
 ## Tech-Stack und Begründung
 
-Gewählt wurde **Next.js 16 mit App Router, TypeScript und serverseitigen Actions**. Diese Lösung liefert sehr gute SEO- und Performance-Eigenschaften für die öffentliche Website, bleibt günstig hostbar und erlaubt ein schlankes, vereinsfreundliches CMS ohne externen SaaS-Lock-in. Inhalte liegen im Prototyp in `data/site.json`; für den produktiven Betrieb lässt sich dieselbe Struktur auf SQLite/PostgreSQL plus Objektspeicher für Medien migrieren. Login und Sessions sind serverseitig angelegt, sodass später Rollen wie „Redakteur“ ergänzt werden können.
+- **PHP 8.1+ ohne externe Laufzeitabhängigkeiten**: PHP läuft auf 32-bit- und 64-bit-Systemen sowie auf klassischem Shared Hosting. Es werden keine nativen Node.js-Binärpakete, kein SWC und kein Build-Schritt benötigt.
+- **Flat-File-CMS mit `data/site.json`**: Inhalte bleiben transparent versionierbar und können über das geschützte Backend unter `/admin` bearbeitet werden.
+- **Serverseitige Sessions und CSRF-Schutz**: Das CMS nutzt HttpOnly-Session-Cookies, CSRF-Tokens und `password_hash`/`password_verify` für Admin-Logins.
+- **Keine Composer-Abhängigkeiten**: `composer.json` beschreibt nur PHP-Anforderung und Komfort-Skripte. Die Anwendung läuft auch ohne `composer install`.
 
 ## Lokal starten
 
 ### Voraussetzungen
 
-- Node.js 20 LTS oder 22 LTS
-- Für die vollständige Next.js- und CMS-Entwicklung unter Windows die **64-bit/x64**-Version von Node.js verwenden. Auf echten 32-bit-Systemen (`win32 | ia32`) startet `npm run dev` automatisch einen schlanken Legacy-Dev-Server mit öffentlicher Website und Basis-CMS, weil Next.js 16 keine 32-bit-Windows-SWC-Binärdateien mitliefert.
+- PHP 8.1 oder neuer, 32-bit oder 64-bit
+- Optional: Composer für Komfort-Skripte
 
 ```bash
-node -p "process.version + ' ' + process.platform + ' ' + process.arch"
-npm install
-npm run dev
+php -S 127.0.0.1:8000 -t public public/index.php
 ```
-
-Wenn `npm run dev` mit `Der Befehl "next" ... konnte nicht gefunden werden` startet, ist `npm install` vorher fehlgeschlagen. In diesem Fall `node_modules` und `package-lock.json` nicht manuell bearbeiten, sondern zuerst `npm install` erneut ausführen. Auf 32-bit-Windows liefert der Legacy-Server die öffentliche Website und ein Basis-CMS unter `/admin` aus. Next.js-spezifische Funktionen, Produktions-Builds und Deployment bleiben Aufgabe der regulären 64-bit-Node.js-Umgebung, WSL, Docker oder des Deployments.
 
 Danach öffnen:
 
-- Öffentliche Website: <http://localhost:3000>
-- CMS-Backend: <http://localhost:3000/admin>
+- Öffentliche Website: <http://127.0.0.1:8000>
+- CMS-Backend: <http://127.0.0.1:8000/admin>
 
-### 32-bit-Windows-Fallback
+Optional mit Composer:
 
-Der Fallback ist nicht mehr nur eine statische Vorschau: Er enthält das öffentliche Website-Layout für Startseite, Einsätze inklusive Detailseiten, Technik, Team, Ausbildung, Galerie, Kontakt, Impressum und Datenschutz sowie Login, Session-Cookie, CSRF-Prüfung, Einsatz-Anlage und JSON-Bearbeitung für `data/site.json`. Damit sind lokale Inhaltsänderungen auch auf 32-bit-Windows möglich. `FORCE_LEGACY_IA32=1 npm run build` erzeugt zusätzlich `.next-legacy/server.mjs` als schlanken Node.js-Entrypoint für 32-bit-Deployments ohne Next.js-SWC. Bewusst nicht enthalten sind Next.js-spezifische Funktionen wie App-Router-Rendering, Server Actions und Image Optimization; dafür weiterhin 64-bit Node.js, WSL, Docker oder das reguläre Deployment nutzen.
+```bash
+composer run dev
+composer run lint
+```
+
+## Deployment auf 32-bit-Systemen
+
+1. Repository auf den Webserver kopieren.
+2. Document Root auf `public/` setzen.
+3. Sicherstellen, dass der Webserver Schreibrechte auf `data/site.json` hat.
+4. In Produktion die Umgebungsvariablen unten setzen.
+
+Für Apache oder nginx muss die Anwendung alle nicht existierenden Pfade an `public/index.php` weiterleiten, damit URLs wie `/einsaetze/personensuche-waldgebiet` funktionieren.
 
 ## Umgebungsvariablen
 
-Für lokale Tests funktionieren sichere Defaults nur eingeschränkt. Für Produktion zwingend setzen:
+Für Produktion zwingend setzen:
 
 ```bash
-SESSION_SECRET="mindestens-32-zeichen-zufaellig-und-geheim"
 ADMIN_EMAIL="admin@feuerwehr-biebertal.local"
-ADMIN_PASSWORD_HASH="$2a$10$...bcrypt-hash..."
+ADMIN_PASSWORD_HASH="..."
 ```
 
-Einen bcrypt-Hash erzeugen, z. B.:
+Passwort-Hash erzeugen:
 
 ```bash
-node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('NEUES_PASSWORT',10).then(console.log)"
+php -r "echo password_hash('NEUES_PASSWORT', PASSWORD_DEFAULT), PHP_EOL;"
 ```
 
 ## Initiales Admin-Konto
@@ -51,23 +61,22 @@ node -e "const bcrypt=require('bcryptjs'); bcrypt.hash('NEUES_PASSWORT',10).then
 - E-Mail: `admin@feuerwehr-biebertal.local`
 - Passwort: `Drohne112!`
 
-Das Standardpasswort ist nur für die Erstinstallation gedacht. Vor einem Live-Gang muss `ADMIN_PASSWORD_HASH` gesetzt werden. Die UI markiert dies als Pflicht zur Passwortänderung; eine vollständige Änderungsstrecke ist als nächster Sicherheitsschritt vorgesehen.
+Das Standardpasswort ist nur für die Erstinstallation gedacht. Vor einem Live-Gang muss `ADMIN_PASSWORD_HASH` gesetzt werden.
 
 ## CMS-Funktionen
 
-- Login unter `/admin`, nicht in der Hauptnavigation verlinkt.
+- Login unter `/admin`, zusätzlich im Footer verlinkt.
 - Neue Einsätze per Formular anlegen.
-- Alle redaktionellen Inhalte über ein JSON-Formular bearbeiten: Startseite, Einsatzbereiche, Einsätze, Team, Technik, Galerie, Ausbildung, Kontakt, Footer und Social Links.
-- Passwort-Reset als Funktionsgerüst unter `/admin/reset`.
-- Mediathek und automatische Bildoptimierung sind als Datenmodell-/Deployment-Schritt vorbereitet; aktuell nutzt der Prototyp externe Platzhalterbilder und Next.js Image Optimization.
+- Alle redaktionellen Inhalte als JSON bearbeiten: Startseite, Einsatzbereiche, Einsätze, Team, Technik, Galerie, Ausbildung, Kontakt, Footer und Social Links.
+- Inhalte werden atomar in `data/site.json` gespeichert.
 
-## Deployment-Optionen
+## Sicherheitshinweise
 
-1. **Vercel + PostgreSQL/Blob Storage**: sehr einfacher Next.js-Betrieb, gute Performance, geringe Wartung. Für ein kleines Vereinsprojekt meist die schnellste produktive Option.
-2. **Netcup/Hetzner VPS mit Node.js + SQLite/PostgreSQL + Caddy**: günstiger eigener Server mit voller Kontrolle, aber mehr Wartungsaufwand für Updates, Backups und Sicherheit.
-
-Für klassisches Webhosting ohne Node.js eignet sich dieser Stack nicht direkt; dann wäre WordPress die einfachere Alternative, aber mit mehr Plugin-/Update-Risiko.
+- `data/site.json` darf bei produktivem Hosting nicht direkt öffentlich unter einer URL ausgeliefert werden. In dieser Struktur liegt die Datei außerhalb von `public/`.
+- Setze ein starkes Admin-Passwort per `ADMIN_PASSWORD_HASH`.
+- Aktiviere HTTPS, damit Session-Cookies sicher übertragen werden.
+- Prüfe Impressum und Datenschutzerklärung vor dem Live-Gang rechtlich.
 
 ## Rechtliche und redaktionelle Hinweise
 
-Alle Beispielinhalte, Namen und Bilder sind Platzhalter. Vor dem Live-Gang müssen echte Inhalte freigegeben werden. Personenfotos dürfen nur mit Einwilligung veröffentlicht werden. Impressum und Datenschutzerklärung enthalten bewusst TODO-Platzhalter und müssen rechtlich geprüft werden.
+Alle Beispielinhalte, Namen und Bilder sind Platzhalter. Vor dem Live-Gang müssen echte Inhalte freigegeben werden. Personenfotos dürfen nur mit Einwilligung veröffentlicht werden.
