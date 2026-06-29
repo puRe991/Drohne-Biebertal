@@ -6,7 +6,8 @@
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
     "check:conflicts": "node scripts/check-conflicts.mjs",
-    "check": "npm run check:conflicts && npm run test && npm run lint && npm run build"
+    "check": "npm run check:branch && npm run test && npm run lint && npm run build",
+    "check:branch": "npm run check:conflicts && git diff --check"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

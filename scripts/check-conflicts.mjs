@@ -1,37 +1,40 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
 
-const root = process.cwd();
-const ignoredDirs = new Set([".git", ".next", "node_modules"]);
 const conflictMarker = /^(<<<<<<<|=======|>>>>>>>)($|\s)/;
+
+function git(args) {
+  return execFileSync("git", args, { encoding: "utf8" });
+}
+
+const unmerged = git(["ls-files", "-u"]).trim();
+if (unmerged) {
+  console.error(
+    "Unaufgelöste Merge-Einträge im Git-Index gefunden:\n" + unmerged,
+  );
+  process.exit(1);
+}
+
+const trackedFiles = git(["ls-files", "-z"]).split("\0").filter(Boolean);
 const findings = [];
 
-function scanFile(filePath) {
+for (const filePath of trackedFiles) {
   const content = fs.readFileSync(filePath, "utf8");
   content.split(/\r?\n/).forEach((line, index) => {
     if (conflictMarker.test(line)) {
-      findings.push(`${path.relative(root, filePath)}:${index + 1}:${line}`);
+      findings.push(`${filePath}:${index + 1}:${line}`);
     }
   });
 }
 
-function scanDir(dir) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (ignoredDirs.has(entry.name)) continue;
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      scanDir(fullPath);
-      continue;
-    }
-    if (entry.isFile()) scanFile(fullPath);
-  }
-}
-
-scanDir(root);
-
 if (findings.length > 0) {
-  console.error("Merge-Konfliktmarker gefunden:\n" + findings.join("\n"));
+  console.error(
+    "Merge-Konfliktmarker in versionierten Dateien gefunden:\n" +
+      findings.join("\n"),
+  );
   process.exit(1);
 }
 
-console.log("Keine Merge-Konfliktmarker gefunden.");
+console.log(
+  `Keine Merge-Konflikte in ${trackedFiles.length} versionierten Dateien gefunden.`,
+);
