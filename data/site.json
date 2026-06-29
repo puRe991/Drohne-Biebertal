@@ -1,0 +1,137 @@
+{
+  "settings": {
+    "siteName": "Feuerwehr Biebertal",
+    "subtitle": "Fachgruppe Drohne",
+    "claim": "Aus der Luft. Für Ihre Sicherheit.",
+    "email": "drohne@feuerwehr-biebertal.de",
+    "phone": "06409 607-0",
+    "address": "Freiwillige Feuerwehr Biebertal, Hainstraße 1, 35444 Biebertal",
+    "socials": { "Facebook": "#", "Instagram": "#", "YouTube": "#" }
+  },
+  "pages": {
+    "heroHeadline": "DROHNE",
+    "heroKicker": "FACHGRUPPE",
+    "heroSubline": "Aus der Luft. Für Ihre Sicherheit. Lageerkundung, Personensuche und Situationsbild in Echtzeit.",
+    "ctaTitle": "Mitmachen & Unterstützen",
+    "ctaText": "Du interessierst dich für Drohnentechnik und möchtest einen Beitrag zur Sicherheit in unserer Gemeinde leisten?",
+    "training": "Unsere Ausbildung verbindet Luftrecht, BOS-Funk, Flugpraxis, Wärmebildauswertung und Einsatzdokumentation. Interessierte Mitglieder werden strukturiert eingearbeitet.",
+    "contactIntro": "Schreiben Sie uns bei Fragen zur Fachgruppe, Übungen oder Unterstützungsmöglichkeiten."
+  },
+  "areas": [
+    {
+      "title": "Personensuche",
+      "text": "Unterstützung bei der Suche nach vermissten Personen – auch in schwer zugänglichem Gelände.",
+      "icon": "search"
+    },
+    {
+      "title": "Lageerkundung",
+      "text": "Schnelle Übersicht aus der Luft zur Beurteilung von Lagen und taktischen Entscheidungen.",
+      "icon": "map"
+    },
+    {
+      "title": "Wärmebild",
+      "text": "Wärmebildtechnik für effektive Suche bei Nacht, Nebel oder in bewaldetem Gebiet.",
+      "icon": "thermometer"
+    },
+    {
+      "title": "Dokumentation",
+      "text": "Luftbild- und Videodokumentation für Einsatznachbereitung und Behördenkommunikation.",
+      "icon": "camera"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "personensuche-waldgebiet",
+      "title": "Personensuche im Waldgebiet",
+      "date": "2024-05-18",
+      "place": "Biebertal – Krumbach",
+      "category": "Personensuche",
+      "status": "abgeschlossen",
+      "duration": "2 Stunden",
+      "image": "https://images.unsplash.com/photo-1516562309708-05f3b2b2c238?auto=format&fit=crop&w=900&q=80",
+      "description": "Unterstützung der Suchmaßnahmen – Person wohlauf aufgefunden."
+    },
+    {
+      "id": "lageerkundung-starkregen",
+      "title": "Lageerkundung nach Starkregen",
+      "date": "2024-05-11",
+      "place": "Biebertal – Frankenbach",
+      "category": "Lageerkundung",
+      "status": "abgeschlossen",
+      "duration": "90 Minuten",
+      "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+      "description": "Überflutungsbereiche erfasst und Einsatzkräfte gezielt koordiniert."
+    },
+    {
+      "id": "flaechenbrand-unterstuetzung",
+      "title": "Flächenbrand – Unterstützung",
+      "date": "2024-05-03",
+      "place": "Biebertal – Fellingshausen",
+      "category": "Wärmebild",
+      "status": "abgeschlossen",
+      "duration": "3 Stunden",
+      "image": "https://images.unsplash.com/photo-1508444845599-5c89863b1c44?auto=format&fit=crop&w=900&q=80",
+      "description": "Ausbreitung überwacht und Löschmaßnahmen aus der Luft begleitet."
+    }
+  ],
+  "team": [
+    {
+      "name": "Sebastian K.",
+      "role": "Gruppenführer",
+      "qualification": "BOS-Drohnenpilot",
+      "order": 1,
+      "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "name": "Lukas M.",
+      "role": "Stellv. Gruppenführer",
+      "qualification": "BOS-Drohnenpilot",
+      "order": 2,
+      "image": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "name": "Jan R.",
+      "role": "Drohnenpilot",
+      "qualification": "Wärmebild-Spezialist",
+      "order": 3,
+      "image": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "name": "Tobias H.",
+      "role": "Technik & Auswertung",
+      "qualification": "Drohnenpilot",
+      "order": 4,
+      "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "dji-matrice-30t",
+      "name": "DJI Matrice 30T",
+      "description": "Robuste Einsatzdrohne für Lageerkundung, Suche und Wärmebildauswertung.",
+      "image": "https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&w=900&q=80",
+      "features": [
+        "Wärmebildkamera (640×512 px)",
+        "Zoomkamera (40× Hybridzoom)",
+        "Laser-Entfernungsmesser",
+        "IP55 – allwettertauglich",
+        "Flugzeit bis zu 41 Minuten",
+        "Live-Übertragung in Echtzeit"
+      ]
+    }
+  ],
+  "gallery": [
+    {
+      "title": "Übungsflug über Biebertal",
+      "category": "Ausbildung",
+      "type": "image",
+      "url": "https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=900&q=80"
+    },
+    {
+      "title": "Techniktraining",
+      "category": "Technik",
+      "type": "image",
+      "url": "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=900&q=80"
+    }
+  ]
+}
