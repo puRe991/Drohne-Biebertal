@@ -7,7 +7,7 @@ const args = isWin32Ia32 ? ['scripts/dev-legacy-ia32.mjs'] : ['node_modules/next
 
 if (isWin32Ia32) {
   console.warn('\n32-bit Windows/Node.js erkannt. Next.js 16 liefert keine win32/ia32-SWC-Binaerdatei.');
-  console.warn('Starte deshalb den schlanken Legacy-Dev-Server fuer die oeffentliche Website.\n');
+  console.warn('Starte deshalb den Legacy-Dev-Server mit oeffentlicher Website und Basis-CMS.\n');
 }
 
 const child = spawn(command, args, {

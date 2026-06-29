@@ -10,13 +10,13 @@ if (!Number.isInteger(major) || major < requiredMajor || major >= maxMajorExclus
 }
 
 if (process.platform === 'win32' && process.arch === 'ia32') {
-  warnings.push('Es wird 32-bit Node.js verwendet (win32/ia32). npm install wird fortgesetzt, aber npm run dev startet nur den Legacy-Vorschau-Server ohne CMS.');
+  warnings.push('Es wird 32-bit Node.js verwendet (win32/ia32). npm install wird fortgesetzt; npm run dev startet den Legacy-Dev-Server mit oeffentlicher Website und Basis-CMS.');
 }
 
 if (warnings.length > 0) {
   console.warn('\nHinweis zur Installation:\n');
   for (const warning of warnings) console.warn(`- ${warning}`);
-  console.warn('\nEmpfohlen fuer volle Next.js/CMS-Funktion: 64-bit Node.js, WSL, Docker oder Deployment nutzen.\n');
+  console.warn('\nEmpfohlen fuer Next.js-Build, Deployment und produktionsnahe Features: 64-bit Node.js, WSL, Docker oder Deployment nutzen.\n');
 }
 
 if (problems.length > 0) {
