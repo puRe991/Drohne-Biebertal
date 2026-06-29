@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "preinstall": "node ./scripts/check-node.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -8,7 +9,6 @@
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.7.0",
     "iron-session": "^8.0.4",
     "lucide-react": "^0.468.0",
     "next": "^16.2.9",
@@ -18,12 +18,18 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
     "eslint-config-next": "^16.2.9",
     "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.9.0 <25",
+    "npm": ">=10"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

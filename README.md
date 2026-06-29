@@ -8,10 +8,18 @@ Gewählt wurde **Next.js 16 mit App Router, TypeScript und serverseitigen Action
 
 ## Lokal starten
 
+### Voraussetzungen
+
+- Node.js 20 LTS oder 22 LTS
+- Unter Windows zwingend die **64-bit/x64**-Version von Node.js verwenden. Die 32-bit-Variante meldet sich als `win32 | ia32` und kann native Pakete bzw. Next.js-Binärdateien nicht zuverlässig installieren.
+
 ```bash
+node -p "process.version + ' ' + process.platform + ' ' + process.arch"
 npm install
 npm run dev
 ```
+
+Wenn `npm run dev` mit `Der Befehl "next" ... konnte nicht gefunden werden` startet, ist `npm install` vorher fehlgeschlagen. In diesem Fall `node_modules` und `package-lock.json` nicht manuell bearbeiten, sondern zuerst Node.js 64-bit installieren und danach erneut `npm install` ausführen.
 
 Danach öffnen:
 
