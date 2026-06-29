@@ -11,7 +11,7 @@ Gewählt wurde **Next.js 16 mit App Router, TypeScript und serverseitigen Action
 ### Voraussetzungen
 
 - Node.js 20 LTS oder 22 LTS
-- Unter Windows zwingend die **64-bit/x64**-Version von Node.js verwenden. Die 32-bit-Variante meldet sich als `win32 | ia32` und kann native Pakete bzw. Next.js-Binärdateien nicht zuverlässig installieren.
+- Für die vollständige Next.js- und CMS-Entwicklung unter Windows die **64-bit/x64**-Version von Node.js verwenden. Auf echten 32-bit-Systemen (`win32 | ia32`) startet `npm run dev` automatisch einen schlanken Legacy-Vorschau-Server für die öffentliche Website, weil Next.js 16 keine 32-bit-Windows-SWC-Binärdateien mitliefert.
 
 ```bash
 node -p "process.version + ' ' + process.platform + ' ' + process.arch"
@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Wenn `npm run dev` mit `Der Befehl "next" ... konnte nicht gefunden werden` startet, ist `npm install` vorher fehlgeschlagen. In diesem Fall `node_modules` und `package-lock.json` nicht manuell bearbeiten, sondern zuerst Node.js 64-bit installieren und danach erneut `npm install` ausführen.
+Wenn `npm run dev` mit `Der Befehl "next" ... konnte nicht gefunden werden` startet, ist `npm install` vorher fehlgeschlagen. In diesem Fall `node_modules` und `package-lock.json` nicht manuell bearbeiten, sondern zuerst `npm install` erneut ausführen. Auf 32-bit-Windows wird die öffentliche Website über den Legacy-Server ausgeliefert; das CMS unter `/admin` benötigt weiterhin 64-bit Node.js, WSL, Docker oder ein Deployment.
 
 Danach öffnen:
 
