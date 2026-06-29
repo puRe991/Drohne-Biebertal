@@ -1,15 +1,25 @@
 import fs from "node:fs";
 import path from "node:path";
-export type SiteContent = typeof import("../data/site.json");
+import { SiteContentSchema, type SiteContent } from "./content-schema";
+
 const file = path.join(process.cwd(), "data/site.json");
+
 export function getContent(): SiteContent {
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  return SiteContentSchema.parse(parsed);
 }
+
 export function saveContent(data: SiteContent) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  const validated = SiteContentSchema.parse(data);
+  fs.writeFileSync(file, JSON.stringify(validated, null, 2));
 }
+
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(date);
 }

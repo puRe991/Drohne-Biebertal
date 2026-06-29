@@ -1,6 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { getSession, verifyLogin } from "@/lib/auth";
+import { SiteContentSchema } from "@/lib/content-schema";
 import { getContent, saveContent } from "@/lib/content";
 export async function loginAction(form: FormData) {
   const email = String(form.get("email") || "");
@@ -22,7 +23,7 @@ export async function saveJsonAction(form: FormData) {
   if (!s.user) redirect("/admin?error=auth");
   const raw = String(form.get("json") || "");
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = SiteContentSchema.parse(JSON.parse(raw));
     saveContent(parsed);
   } catch {
     redirect("/admin?error=json");
