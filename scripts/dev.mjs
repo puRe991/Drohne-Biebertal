@@ -1,13 +1,12 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { shouldRunLegacyIa32Mode, warnLegacyIa32Mode } from './platform.mjs';
 
-const isWin32Ia32 = process.platform === 'win32' && process.arch === 'ia32';
 const command = process.execPath;
-const args = isWin32Ia32 ? ['scripts/dev-legacy-ia32.mjs'] : ['node_modules/next/dist/bin/next', 'dev'];
+const args = shouldRunLegacyIa32Mode() ? ['scripts/dev-legacy-ia32.mjs'] : ['node_modules/next/dist/bin/next', 'dev'];
 
-if (isWin32Ia32) {
-  console.warn('\n32-bit Windows/Node.js erkannt. Next.js 16 liefert keine win32/ia32-SWC-Binaerdatei.');
-  console.warn('Starte deshalb den Legacy-Dev-Server mit oeffentlicher Website und Basis-CMS.\n');
+if (shouldRunLegacyIa32Mode()) {
+  warnLegacyIa32Mode('Starte deshalb den Legacy-Dev-Server mit oeffentlicher Website und Basis-CMS.');
 }
 
 const child = spawn(command, args, {
