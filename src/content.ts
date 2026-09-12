@@ -1,9 +1,10 @@
 import seed from "../data/site.json";
 import type { Env } from "./env.ts";
+import type { ContentStore } from "./store.ts";
 
 /**
  * Inhaltsmodell. data/site.json bleibt die versionierte Auslieferungsfassung und
- * dient als Seed; die Redaktion arbeitet danach auf der D1-Kopie.
+ * dient als Seed; die Redaktion arbeitet danach auf der gespeicherten Kopie.
  */
 export interface Incident {
   id: string;
@@ -45,7 +46,14 @@ export interface SiteContent {
 
 export class ContentError extends Error {}
 
-const DOCUMENT_ID = "site";
+/**
+ * Stub der einen Instanz, über die alle Inhalte laufen.
+ * Bewusst hier und nicht in store.ts: dieses Modul soll ohne die
+ * Worker-Laufzeit importierbar bleiben.
+ */
+function contentStore(env: Env): DurableObjectStub<ContentStore> {
+  return env.CONTENT.get(env.CONTENT.idFromName("site"));
+}
 
 export function seedContent(): SiteContent {
   // Strukturierte Kopie, damit Aufrufer das importierte Modul nicht verändern.
@@ -115,24 +123,23 @@ export function validateContent(data: unknown): SiteContent {
 }
 
 /**
- * Liest die Inhalte aus D1. Ist die Tabelle noch leer - typisch direkt nach dem
+ * Liest die gespeicherten Inhalte. Ist der Speicher noch leer - typisch direkt nach dem
  * ersten Deploy - werden die Seed-Inhalte übernommen.
  */
 export async function loadContent(env: Env): Promise<SiteContent> {
-  const row = await env.DB.prepare("SELECT payload FROM cms_content WHERE id = ?1")
-    .bind(DOCUMENT_ID)
-    .first<{ payload: string }>();
+  const stored = await contentStore(env).load();
 
-  if (row?.payload) {
+  if (stored !== null) {
     try {
-      return validateContent(JSON.parse(row.payload));
+      return validateContent(JSON.parse(stored));
     } catch (error) {
       throw new ContentError(
-        `Inhalte in D1 sind unbrauchbar: ${error instanceof Error ? error.message : String(error)}`,
+        `Gespeicherte Inhalte sind unbrauchbar: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
 
+  // Erster Aufruf nach dem Deploy: Auslieferungsfassung übernehmen.
   const content = validateContent(seedContent());
   await saveContent(env, content, "seed");
   return content;
@@ -140,22 +147,16 @@ export async function loadContent(env: Env): Promise<SiteContent> {
 
 export async function saveContent(env: Env, data: unknown, author: string): Promise<SiteContent> {
   const content = validateContent(data);
-  // UPSERT: zwei gleichzeitig speichernde Redakteure laufen nicht in einen
-  // Primärschlüsselkonflikt, der Zähler dokumentiert die Bearbeitungen.
-  await env.DB.prepare(
-    `INSERT INTO cms_content (id, payload, revision, updated_at, updated_by)
-     VALUES (?1, ?2, 1, ?3, ?4)
-     ON CONFLICT (id) DO UPDATE SET
-       payload = excluded.payload,
-       revision = cms_content.revision + 1,
-       updated_at = excluded.updated_at,
-       updated_by = excluded.updated_by`,
-  )
-    .bind(DOCUMENT_ID, JSON.stringify(content), new Date().toISOString(), author.slice(0, 190))
-    .run();
+  await contentStore(env).save(JSON.stringify(content), author);
   return content;
 }
 
 export function encodeContent(content: SiteContent): string {
   return JSON.stringify(content, null, 2);
+}
+
+/** Metadaten des Speichers für die Readiness-Prüfung. */
+export async function storeInfo(env: Env): Promise<{ revision: number; updatedAt: string | null }> {
+  const info = await contentStore(env).info();
+  return { revision: info.revision, updatedAt: info.updatedAt };
 }

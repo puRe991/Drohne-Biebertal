@@ -215,16 +215,16 @@ describe("Cookie-Hilfen", () => {
 
 describe("Konfigurationsprüfung", () => {
   it("verlangt Secrets in Produktion", () => {
-    const problems = configProblems({ APP_ENV: "production", DB: {} } as unknown as Env).join(" | ");
+    const problems = configProblems({ APP_ENV: "production", CONTENT: {} } as unknown as Env).join(" | ");
     expect(problems).toMatch(/ADMIN_PASSWORD_HASH/);
     expect(problems).toMatch(/APP_SECRET/);
   });
 
   it("lässt die Entwicklung ohne Zusatzkonfiguration laufen", () => {
-    expect(configProblems({ APP_ENV: "development", DB: {} } as unknown as Env)).toEqual([]);
+    expect(configProblems({ APP_ENV: "development", CONTENT: {} } as unknown as Env)).toEqual([]);
   });
 
-  it("meldet ein fehlendes D1-Binding", () => {
-    expect(configProblems({ APP_ENV: "development" } as Env).join(" ")).toMatch(/D1-Binding/);
+  it("meldet ein fehlendes Speicher-Binding", () => {
+    expect(configProblems({ APP_ENV: "development" } as Env).join(" ")).toMatch(/CONTENT/);
   });
 });

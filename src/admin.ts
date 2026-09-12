@@ -84,7 +84,7 @@ function renderDashboard(
     `<form method="post" action="/admin"><input type="hidden" name="action" value="logout">` +
     `<input type="hidden" name="csrf" value="${e(token)}"><button>Logout</button></form></div>` +
     `<h1>CMS Backend</h1>` +
-    `<p>Angemeldet als ${e(user.email)} (${e(user.role)}). Inhalte werden in der D1-Datenbank gespeichert.</p>` +
+    `<p>Angemeldet als ${e(user.email)} (${e(user.role)}). Inhalte werden dauerhaft im Cloudflare-Speicher abgelegt.</p>` +
     warning +
     (saved ? `<p class="redtext">Gespeichert.</p>` : "") +
     notice +

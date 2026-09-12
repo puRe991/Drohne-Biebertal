@@ -4,8 +4,11 @@
  * gesetzt und erscheinen nie im Repository.
  */
 export interface Env {
-  /** D1-Datenbank: persistiert die redaktionellen Inhalte ausserhalb des Workers. */
-  DB: D1Database;
+  /**
+   * Durable Object mit den redaktionellen Inhalten. Wird beim Deploy automatisch
+   * angelegt - es gibt keine Datenbank, die vorher erstellt werden müsste.
+   */
+  CONTENT: DurableObjectNamespace<import("./store.ts").ContentStore>;
   /** Statische Dateien aus public/ (styles.css, robots.txt). */
   ASSETS: Fetcher;
 
@@ -61,8 +64,8 @@ export function pageCacheSeconds(env: Env): number {
  */
 export function configProblems(env: Env): string[] {
   const problems: string[] = [];
-  if (!env.DB) {
-    problems.push("D1-Binding DB fehlt: In wrangler.toml konfigurieren und `npm run db:migrate` ausführen.");
+  if (!env.CONTENT) {
+    problems.push("Binding CONTENT fehlt: Durable Object in wrangler.toml konfigurieren.");
   }
   if (isProduction(env)) {
     if (!env.ADMIN_PASSWORD_HASH) {

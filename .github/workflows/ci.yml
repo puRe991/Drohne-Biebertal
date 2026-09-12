@@ -32,6 +32,3 @@ jobs:
       # Schlägt fehl, wenn wrangler.toml oder ein Import kaputt ist.
       - name: Deploy-Probelauf
         run: npx wrangler deploy --dry-run --outdir dist
-
-      - name: Migrationen auf eine lokale D1 anwenden
-        run: npx wrangler d1 migrations apply drohne-biebertal --local
