@@ -1,0 +1,6 @@
+# Lokale Secrets für `npm run dev`. Als .dev.vars kopieren (wird nicht eingecheckt).
+# In der Cloud stattdessen: npx wrangler secret put <NAME>
+APP_ENV=development
+APP_SECRET=lokales-entwicklungs-geheimnis
+# Erzeugen mit: npm run hash-password -- 'MeinPasswort'
+ADMIN_PASSWORD_HASH=
