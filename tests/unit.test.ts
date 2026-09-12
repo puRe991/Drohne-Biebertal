@@ -13,7 +13,7 @@ import {
   verifyLogin,
   verifyPassword,
 } from "../src/auth.ts";
-import { seedContent, sortedNews, validateContent, ContentError } from "../src/content.ts";
+import { fingerprint, seedContent, seedDecision, sortedNews, validateContent, ContentError } from "../src/content.ts";
 import { configProblems, type Env } from "../src/env.ts";
 import { e, formatDate, initials, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
 
@@ -226,6 +226,37 @@ describe("Redaktionelle Auslieferungsinhalte", () => {
     expect(features).toMatch(/Lautsprecher/);
     // Kein konkretes Modell: dafür gibt es keine Quelle.
     expect(features).not.toMatch(/Mavic|Matrice|Phantom|Air \d/);
+  });
+});
+
+describe("Auslieferungsfassung gegen Redaktion", () => {
+  const seeded = (print: string | null) => ({ payload: "{}", updatedBy: "seed", seedFingerprint: print });
+
+  it("befüllt einen leeren Speicher", () => {
+    expect(seedDecision({ payload: null, updatedBy: "seed", seedFingerprint: null }, "abc")).toBe("erstbefuellung");
+  });
+
+  it("übernimmt eine geänderte data/site.json, solange nur geseedet wurde", () => {
+    expect(seedDecision(seeded("alt"), "neu")).toBe("aktualisieren");
+    // Genau dieser Fall lag live vor: Speicher am Anfang befüllt, Datei später geändert.
+    expect(seedDecision(seeded(null), "neu")).toBe("aktualisieren");
+  });
+
+  it("schreibt nichts, wenn sich die Auslieferungsfassung nicht geändert hat", () => {
+    expect(seedDecision(seeded("gleich"), "gleich")).toBe("unveraendert");
+  });
+
+  it("überschreibt redaktionelle Inhalte niemals", () => {
+    const edited = { payload: "{}", updatedBy: "admin@feuerwehr-biebertal.local", seedFingerprint: "alt" };
+    expect(seedDecision(edited, "neu")).toBe("redaktion-behalten");
+    expect(seedDecision({ ...edited, seedFingerprint: null }, "neu")).toBe("redaktion-behalten");
+    expect(seedDecision({ ...edited, seedFingerprint: "neu" }, "neu")).toBe("redaktion-behalten");
+  });
+
+  it("bildet stabile, inhaltsabhängige Fingerabdrücke", async () => {
+    expect(await fingerprint("a")).toBe(await fingerprint("a"));
+    expect(await fingerprint("a")).not.toBe(await fingerprint("b"));
+    expect(await fingerprint("a")).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 
