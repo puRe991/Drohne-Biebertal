@@ -1,0 +1,26 @@
+{
+  "name": "drohne-biebertal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Website mit Flat-File-CMS der Fachgruppe Drohne, Feuerwehr Biebertal – als Cloudflare Worker.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:create": "wrangler d1 create drohne-biebertal",
+    "db:migrate": "wrangler d1 migrations apply drohne-biebertal --remote",
+    "db:migrate:local": "wrangler d1 migrations apply drohne-biebertal --local",
+    "hash-password": "node scripts/hash-password.mjs",
+    "secret": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260911.1",
+    "@types/node": "^22.20.2",
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.131.1"
+  }
+}

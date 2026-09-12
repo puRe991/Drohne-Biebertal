@@ -1,82 +1,148 @@
 # Feuerwehr Biebertal – Fachgruppe Drohne
 
-32-bit-fähige Website mit integriertem Flat-File-CMS für die Fachgruppe Drohne. Der bisherige Node.js-/Next.js-Stack wurde durch eine klassische PHP-Anwendung ersetzt, damit Betrieb und Redaktion auch auf 32-bit-Systemen und einfachem Webhosting möglich sind.
+Website mit integriertem Flat-File-CMS, betrieben als **Cloudflare Worker** mit **D1**
+als Datenbank. Die Seiten werden serverseitig gerendert, das Redaktions-Backend liegt
+unter `/admin`.
 
 ## Tech-Stack und Begründung
 
-- **PHP 8.1+ ohne externe Laufzeitabhängigkeiten**: PHP läuft auf 32-bit- und 64-bit-Systemen sowie auf klassischem Shared Hosting. Es werden keine nativen Node.js-Binärpakete, kein SWC und kein Build-Schritt benötigt.
-- **Flat-File-CMS mit `data/site.json`**: Inhalte bleiben transparent versionierbar und können über das geschützte Backend unter `/admin` bearbeitet werden.
-- **Serverseitige Sessions und CSRF-Schutz**: Das CMS nutzt HttpOnly-Session-Cookies, CSRF-Tokens und `password_hash`/`password_verify` für Admin-Logins.
-- **Keine Composer-Abhängigkeiten**: `composer.json` beschreibt nur PHP-Anforderung und Komfort-Skripte. Die Anwendung läuft auch ohne `composer install`.
+- **Cloudflare Workers (TypeScript)**: Läuft in Cloudflares Edge-Netz, kein Server und
+  kein Container zu pflegen. Die vorherige PHP-Anwendung konnte dort nicht laufen –
+  Workers führen kein PHP aus.
+- **D1 (SQLite) für Inhalte**: Das Dateisystem eines Workers ist schreibgeschützt und
+  flüchtig. Redaktionelle Änderungen gehören deshalb in eine Datenbank, sonst wären sie
+  beim nächsten Deploy verloren. `data/site.json` bleibt die versionierte
+  Auslieferungsfassung und füllt eine leere Datenbank einmalig.
+- **Workers Assets** liefert `public/` (Stylesheet, `robots.txt`) direkt aus dem
+  Cloudflare-Cache aus.
+- **Keine Laufzeit-Abhängigkeiten**: Sessions, CSRF-Schutz und Passwort-Hashing nutzen
+  ausschliesslich die eingebaute WebCrypto-API. Alle npm-Pakete sind reine Build-Werkzeuge.
 
-## Lokal starten
-
-### Voraussetzungen
-
-- PHP 8.1 oder neuer, 32-bit oder 64-bit
-- Optional: Composer für Komfort-Skripte
-
-```bash
-php -S 127.0.0.1:8000 -t public public/index.php
-```
-
-Danach öffnen:
-
-- Öffentliche Website: <http://127.0.0.1:8000>
-- CMS-Backend: <http://127.0.0.1:8000/admin>
-
-Optional mit Composer:
+## Schnellstart (lokal)
 
 ```bash
-composer run dev
-composer run lint
+npm install
+cp .dev.vars.example .dev.vars          # lokale Secrets
+npm run hash-password -- 'MeinLokalesPasswort'   # Ausgabe in .dev.vars eintragen
+npm run db:migrate:local                # D1-Tabellen lokal anlegen
+npm run dev                             # http://localhost:8787
 ```
 
-## Deployment auf 32-bit-Systemen
+- Öffentliche Website: <http://localhost:8787>
+- CMS-Backend: <http://localhost:8787/admin>
 
-1. Repository auf den Webserver kopieren.
-2. Document Root auf `public/` setzen.
-3. Sicherstellen, dass der Webserver Schreibrechte auf `data/site.json` hat.
-4. In Produktion die Umgebungsvariablen unten setzen.
+Ohne gesetztes `ADMIN_PASSWORD_HASH` gilt lokal der Entwicklungszugang
+`admin@feuerwehr-biebertal.local` / `Drohne112!`. In Produktion ist dieser Zugang
+deaktiviert – ohne Secret bleibt das Backend gesperrt.
 
-Für Apache oder nginx muss die Anwendung alle nicht existierenden Pfade an `public/index.php` weiterleiten, damit URLs wie `/einsaetze/personensuche-waldgebiet` funktionieren.
+## Erstmaliges Deployment
 
-## Umgebungsvariablen
-
-Für Produktion zwingend setzen:
+Ein Deploy ohne diese Schritte schlägt fehl, weil `wrangler.toml` noch eine
+Platzhalter-Datenbank-ID enthält.
 
 ```bash
-ADMIN_EMAIL="admin@feuerwehr-biebertal.local"
-ADMIN_PASSWORD_HASH="..."
+# 1. Datenbank anlegen und die ausgegebene database_id in wrangler.toml eintragen
+npx wrangler d1 create drohne-biebertal
+
+# 2. Tabellen in der Cloud anlegen
+npm run db:migrate
+
+# 3. Secrets setzen (erscheinen nie im Repository)
+npm run hash-password -- 'EinStarkesPasswort'
+npx wrangler secret put ADMIN_PASSWORD_HASH
+npm run secret
+npx wrangler secret put APP_SECRET
+
+# 4. Veröffentlichen
+npm run deploy
 ```
 
-Passwort-Hash erzeugen:
+Beim ersten Aufruf übernimmt der Worker die Inhalte aus `data/site.json` in D1.
+
+### Automatischer Deploy über GitHub
+
+`.github/workflows/deploy.yml` veröffentlicht jeden Push auf `main`. Dafür im
+Repository zwei Secrets hinterlegen:
+
+- `CLOUDFLARE_API_TOKEN` – Token mit der Berechtigung *Edit Cloudflare Workers*
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Wird stattdessen die Cloudflare-eigene Git-Integration genutzt (Build-Befehl
+`npx wrangler deploy`), müssen `database_id` und die Secrets ebenfalls gesetzt sein.
+
+## Konfiguration
+
+Nicht vertrauliche Werte stehen in `wrangler.toml` unter `[vars]`:
+
+| Variable | Bedeutung | Standard |
+| --- | --- | --- |
+| `APP_ENV` | `production`, `staging` oder `development` | `production` |
+| `APP_DEBUG` | Zeigt Fehlermeldungen im Browser | `false` |
+| `APP_VERSION` | Cache-Buster für Assets, im Deploy der Git-SHA | `dev` |
+| `PAGE_CACHE_SECONDS` | Cache-Dauer öffentlicher Seiten | `60` |
+| `SESSION_LIFETIME` | Gültigkeit der Anmeldung in Sekunden | `7200` |
+| `ADMIN_EMAIL` | Anmeldename des Backends | `admin@feuerwehr-biebertal.local` |
+
+Vertrauliche Werte ausschliesslich als Secret (`npx wrangler secret put`):
+
+| Secret | Zweck |
+| --- | --- |
+| `ADMIN_PASSWORD_HASH` | PBKDF2-Hash des Admin-Passworts. Fehlt er, ist das Backend in Produktion gesperrt. |
+| `APP_SECRET` | Signiert Session-Cookie und CSRF-Token. |
+
+## Betrieb
+
+| Pfad | Zweck |
+| --- | --- |
+| `/healthz` | Liveness – antwortet ohne Datenbankzugriff |
+| `/readyz` | Readiness – prüft D1 und meldet fehlende Secrets (HTTP 503 bei Problemen) |
+
+Logs live mitlesen: `npx wrangler tail`.
+
+Inhalte sichern und zurückspielen:
 
 ```bash
-php -r "echo password_hash('NEUES_PASSWORT', PASSWORD_DEFAULT), PHP_EOL;"
+npx wrangler d1 execute drohne-biebertal --remote \
+  --command "SELECT payload FROM cms_content WHERE id='site';" --json > backup.json
 ```
-
-## Initiales Admin-Konto
-
-- E-Mail: `admin@feuerwehr-biebertal.local`
-- Passwort: `Drohne112!`
-
-Das Standardpasswort ist nur für die Erstinstallation gedacht. Vor einem Live-Gang muss `ADMIN_PASSWORD_HASH` gesetzt werden.
 
 ## CMS-Funktionen
 
 - Login unter `/admin`, zusätzlich im Footer verlinkt.
-- Neue Einsätze per Formular anlegen.
-- Alle redaktionellen Inhalte als JSON bearbeiten: Startseite, Einsatzbereiche, Einsätze, Team, Technik, Galerie, Ausbildung, Kontakt, Footer und Social Links.
-- Inhalte werden atomar in `data/site.json` gespeichert.
+- Neue Einsätze per Formular anlegen; die URL-ID wird aus dem Titel erzeugt und bei
+  Namensgleichheit automatisch durchnummeriert.
+- Alle redaktionellen Inhalte als JSON bearbeiten: Startseite, Einsatzbereiche,
+  Einsätze, Team, Technik, Galerie, Ausbildung, Kontakt, Footer und Social Links.
+- Vor dem Speichern werden die Inhalte geprüft; fehlerhaftes JSON wird abgewiesen,
+  damit die öffentliche Website nicht beschädigt wird.
+
+## Entwicklung
+
+```bash
+npm run typecheck   # TypeScript ohne Emit
+npm test            # Unit-Tests (Vitest)
+npm run dev         # lokaler Worker samt lokaler D1
+```
 
 ## Sicherheitshinweise
 
-- `data/site.json` darf bei produktivem Hosting nicht direkt öffentlich unter einer URL ausgeliefert werden. In dieser Struktur liegt die Datei außerhalb von `public/`.
-- Setze ein starkes Admin-Passwort per `ADMIN_PASSWORD_HASH`.
-- Aktiviere HTTPS, damit Session-Cookies sicher übertragen werden.
-- Prüfe Impressum und Datenschutzerklärung vor dem Live-Gang rechtlich.
+- Das Admin-Passwort wird als PBKDF2-SHA256 mit 210.000 Iterationen gespeichert.
+- Session- und CSRF-Token sind HMAC-signiert; ohne `APP_SECRET` sind sie nicht fälschbar.
+- Das Backend ist mit `X-Robots-Tag: noindex` und `Cache-Control: no-store` ausgenommen.
+- Bild-URLs aus dem CMS werden auf `http(s)` begrenzt, damit keine `javascript:`-URL
+  in die Seite gelangt.
+- Cloudflare terminiert TLS; Cookies werden ausserhalb von `localhost` immer mit
+  `Secure` gesetzt.
+
+## Bilder und Medien
+
+Alle Bilder werden derzeit als externe URL referenziert. Ein Datei-Upload ist bewusst
+nicht enthalten: Workers haben kein beschreibbares Dateisystem. Für eigene Medien
+eignet sich ein R2-Bucket, der dem Worker als Binding zugewiesen wird.
 
 ## Rechtliche und redaktionelle Hinweise
 
-Alle Beispielinhalte, Namen und Bilder sind Platzhalter. Vor dem Live-Gang müssen echte Inhalte freigegeben werden. Personenfotos dürfen nur mit Einwilligung veröffentlicht werden.
+Alle Beispielinhalte, Namen und Bilder sind Platzhalter. Vor dem Live-Gang müssen echte
+Inhalte freigegeben werden. Personenfotos dürfen nur mit Einwilligung veröffentlicht
+werden. Impressum und Datenschutzerklärung sind noch als TODO hinterlegt und vor der
+Veröffentlichung rechtlich zu prüfen.

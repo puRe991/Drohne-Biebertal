@@ -1,0 +1,32 @@
+name = "drohne-biebertal"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Statische Dateien aus public/ (styles.css, robots.txt). Cloudflare liefert sie
+# direkt aus; alle übrigen Pfade beantwortet der Worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+[vars]
+APP_ENV = "production"
+APP_DEBUG = "false"
+PAGE_CACHE_SECONDS = "60"
+SESSION_LIFETIME = "7200"
+ADMIN_EMAIL = "admin@feuerwehr-biebertal.local"
+
+# D1 speichert die redaktionellen Inhalte ausserhalb des Workers.
+# Vor dem ersten Deploy anlegen:  npx wrangler d1 create drohne-biebertal
+# Die ausgegebene database_id hier eintragen.
+[[d1_databases]]
+binding = "DB"
+database_name = "drohne-biebertal"
+database_id = "PLATZHALTER_BITTE_ERSETZEN"
+migrations_dir = "migrations"
+
+# Secrets werden NICHT hier abgelegt, sondern gesetzt mit:
+#   npx wrangler secret put ADMIN_PASSWORD_HASH
+#   npx wrangler secret put APP_SECRET

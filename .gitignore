@@ -1,9 +1,16 @@
+# Abhängigkeiten und Build-Ausgaben
 node_modules
-.next
-.env*.local
-.env
-.DS_Store
-public/uploads/*
-!public/uploads/.gitkeep
+dist
 
-.next-legacy
+# Cloudflare: lokaler Zustand und Secrets
+.wrangler
+.dev.vars
+.dev.vars.local
+!.dev.vars.example
+
+# Allgemeine Secrets
+.env
+.env.local
+
+# Betriebssystem
+.DS_Store
