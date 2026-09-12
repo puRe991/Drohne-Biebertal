@@ -13,9 +13,9 @@ import {
   verifyLogin,
   verifyPassword,
 } from "../src/auth.ts";
-import { seedContent, validateContent, ContentError } from "../src/content.ts";
+import { seedContent, sortedNews, validateContent, ContentError } from "../src/content.ts";
 import { configProblems, type Env } from "../src/env.ts";
-import { e, formatDate, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
+import { e, formatDate, initials, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
 
 const baseEnv = { APP_SECRET: "test-geheimnis", APP_ENV: "development" } as unknown as Env;
 
@@ -61,6 +61,21 @@ describe("Datumsformat", () => {
   });
 });
 
+/** Eigenständiger Einsatz: die Tests sollen nicht an redaktionellen Inhalten hängen. */
+function incident(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "uebung-dünsberg".replace("ü", "ue"),
+    title: "Übung am Dünsberg",
+    date: "2026-09-12",
+    place: "Fellingshausen",
+    category: "Lageerkundung",
+    status: "abgeschlossen",
+    image: "https://example.com/bild.jpg",
+    description: "Beschreibung.",
+    ...overrides,
+  };
+}
+
 describe("Inhaltsvalidierung", () => {
   it("akzeptiert die Auslieferungsinhalte", () => {
     expect(() => validateContent(seedContent())).not.toThrow();
@@ -78,24 +93,139 @@ describe("Inhaltsvalidierung", () => {
 
   it("erkennt falsches Datumsformat", () => {
     const data = seedContent();
-    data.incidents[0]!.date = "12.09.2026";
+    data.incidents = [incident({ date: "12.09.2026" })];
     expect(() => validateContent(data)).toThrow(/YYYY-MM-DD/);
   });
 
   it("erkennt doppelte Einsatz-IDs", () => {
     const data = seedContent();
-    data.incidents[1]!.id = data.incidents[0]!.id;
+    data.incidents = [incident(), incident({ title: "Zweiter Einsatz" })];
     expect(() => validateContent(data)).toThrow(/doppelt/);
   });
 
   it("erkennt ungültige Einsatz-IDs", () => {
     const data = seedContent();
-    data.incidents[0]!.id = "Nicht Erlaubt!";
+    data.incidents = [incident({ id: "Nicht Erlaubt!" })];
     expect(() => validateContent(data)).toThrow(/Kleinbuchstaben/);
   });
 
   it("weist Listen an Objektstellen ab", () => {
     expect(() => validateContent([])).toThrow(ContentError);
+  });
+});
+
+describe("News", () => {
+  it("akzeptiert gültige Meldungen", () => {
+    const data = seedContent();
+    data.news = [{ id: "erste-meldung", title: "Erste Meldung", date: "2026-09-12", text: "Inhalt." }];
+    expect(() => validateContent(data)).not.toThrow();
+  });
+
+  it("erkennt falsches Datum und ungültige IDs", () => {
+    const withDate = seedContent();
+    withDate.news = [{ id: "x", title: "T", date: "12.09.2026", text: "Inhalt." }];
+    expect(() => validateContent(withDate)).toThrow(/YYYY-MM-DD/);
+
+    const withId = seedContent();
+    withId.news = [{ id: "Nicht Erlaubt", title: "T", date: "2026-09-12", text: "Inhalt." }];
+    expect(() => validateContent(withId)).toThrow(/Kleinbuchstaben/);
+  });
+
+  it("erkennt doppelte Meldungs-IDs", () => {
+    const data = seedContent();
+    data.news = [
+      { id: "doppelt", title: "A", date: "2026-09-12", text: "Inhalt." },
+      { id: "doppelt", title: "B", date: "2026-09-11", text: "Inhalt." },
+    ];
+    expect(() => validateContent(data)).toThrow(/doppelt/);
+  });
+
+  it("erkennt leeren Meldungstext", () => {
+    const data = seedContent();
+    data.news = [{ id: "leer", title: "T", date: "2026-09-12", text: "   " }];
+    expect(() => validateContent(data)).toThrow(/news\[\]\.text/);
+  });
+
+  it("bleibt zu Datenständen ohne news-Bereich kompatibel", () => {
+    // Inhalte, die vor der Einführung des Bereichs gespeichert wurden.
+    const data = seedContent() as unknown as Record<string, unknown>;
+    delete data.news;
+    const validated = validateContent(data);
+    expect(validated.news).toEqual([]);
+  });
+
+  it("sortiert Meldungen neueste zuerst", () => {
+    const data = seedContent();
+    data.news = [
+      { id: "alt", title: "Alt", date: "2026-01-05", text: "x" },
+      { id: "neu", title: "Neu", date: "2026-09-12", text: "x" },
+      { id: "mittel", title: "Mittel", date: "2026-05-01", text: "x" },
+    ];
+    expect(sortedNews(data).map((n) => n.id)).toEqual(["neu", "mittel", "alt"]);
+  });
+});
+
+describe("Team", () => {
+  it("bildet Initialen für Personen ohne Foto", () => {
+    expect(initials("Florian Clever")).toBe("FC");
+    expect(initials("Michele Schuster")).toBe("MS");
+    expect(initials("Sebastian Hose")).toBe("SH");
+    expect(initials("Maurice")).toBe("M");
+    expect(initials("  Tim   Antosch  ")).toBe("TA");
+    expect(initials("")).toBe("?");
+  });
+
+  it("führt alle sechs Mitglieder ohne fremde Fotos", () => {
+    const { team } = seedContent();
+    expect(team.map((m) => m.name)).toEqual([
+      "Florian Clever",
+      "Michele Schuster",
+      "Maurice Kunz",
+      "Tim Antosch",
+      "Markus Hofmann",
+      "Sebastian Hose",
+    ]);
+    // Kein Eintrag darf ein Stockfoto einer fremden Person tragen.
+    expect(team.every((m) => (m.image ?? "") === "")).toBe(true);
+  });
+});
+
+describe("Redaktionelle Auslieferungsinhalte", () => {
+  it("trägt die Kontaktdaten aus dem offiziellen Impressum", () => {
+    const { settings } = seedContent();
+    expect(settings.address).toContain("Mühlbergstraße 9");
+    expect(settings.address).toContain("35444 Biebertal");
+    expect(settings.phone).toBe("06409 69-0");
+    expect(settings.email).toBe("info@feuerwehr-biebertal.de");
+  });
+
+  it("verlinkt nur belegte Kanäle, keine Platzhalter", () => {
+    const socials = Object.values(seedContent().settings.socials ?? {});
+    expect(socials.length).toBeGreaterThan(0);
+    expect(socials.every((url) => url.startsWith("https://"))).toBe(true);
+  });
+
+  it("enthält keine erfundenen Einsätze oder Galeriebilder", () => {
+    const data = seedContent();
+    expect(data.incidents).toEqual([]);
+    expect(data.gallery).toEqual([]);
+  });
+
+  it("liefert gültige Meldungen aus", () => {
+    const { news } = seedContent();
+    expect(() => validateContent(seedContent())).not.toThrow();
+    for (const entry of news) {
+      expect(entry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(entry.text.trim().length).toBeGreaterThan(80);
+    }
+  });
+
+  it("beschreibt die Technik ohne erfundenes Drohnenmodell", () => {
+    const features = seedContent().equipment.flatMap((item) => item.features).join(" ");
+    expect(features).toMatch(/Wärmebildkamera/);
+    expect(features).toMatch(/Lautsprecher/);
+    // Kein konkretes Modell: dafür gibt es keine Quelle.
+    expect(features).not.toMatch(/Mavic|Matrice|Phantom|Air \d/);
   });
 });
 
