@@ -210,7 +210,9 @@ nav a:first-child:after {
   gap: 24px;
 }
 .cards4 {
-  grid-template-columns: repeat(4, 1fr);
+  /* auto-fit statt fester Spaltenzahl: wenige Karten füllen die Breite,
+     viele brechen weiterhin sauber um. */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 .card {
   background: #fff;

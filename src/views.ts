@@ -24,14 +24,17 @@ export function home(c: SiteContent): string {
     )
     .join("");
 
-  const incidentCards = c.incidents
-    .map(
-      (i) =>
-        `<a class="incident" href="/einsaetze/${e(i.id)}">${imgTag(i.image, "")}` +
-        `<div><span class="badge">EINSATZ</span><small style="float:right">${e(formatDate(i.date))}</small>` +
-        `<b style="display:block">${e(i.title)}</b><span>${e(i.place)}</span><p>${e(i.description)}</p></div></a>`,
-    )
-    .join("");
+  const incidentCards = c.incidents.length === 0
+    ? `<p class="news-empty">Einsatzberichte veröffentlichen wir über die Kanäle der ` +
+      `Feuerwehr Biebertal.</p>`
+    : c.incidents
+        .map(
+          (i) =>
+            `<a class="incident" href="/einsaetze/${e(i.id)}">${imgTag(i.image, "")}` +
+            `<div><span class="badge">EINSATZ</span><small style="float:right">${e(formatDate(i.date))}</small>` +
+            `<b style="display:block">${e(i.title)}</b><span>${e(i.place)}</span><p>${e(i.description)}</p></div></a>`,
+        )
+        .join("");
 
   const teamCards = sortedTeam(c)
     .map((m) => `<div>${personAvatar(m)}<b>${e(m.name)}</b><p>${personRole(m)}</p></div>`)
@@ -72,9 +75,10 @@ export function home(c: SiteContent): string {
     `<div class="card"><h2 class="section-title">Unsere Technik</h2>${equipmentCard}` +
     `<a class="redtext" href="/technik">Gesamte Ausrüstung ansehen →</a></div></section>` +
     `<section class="wrap grid mapcta"><div class="mapbox"><h2 class="section-title">Einsatzgebiet Biebertal</h2>` +
-    `<div class="outline-map"><span>Krumbach</span><span>Frankenbach</span><span>Rodheim-Bieber</span>` +
-    `<span>Fellingshausen</span><span>Vetzberg</span></div>` +
-    `<p>Wir sind für das gesamte Gemeindegebiet Biebertal im Einsatz – schnell, zuverlässig und aus der Luft.</p>` +
+    `<div class="outline-map"><span>Fellingshausen</span><span>Frankenbach</span><span>Königsberg</span>` +
+    `<span>Krumbach</span><span>Rodheim-Bieber</span><span>Vetzberg</span></div>` +
+    `<p>Rund 44 Quadratkilometer, sechs Ortsteile und mit dem Krofdorfer Forst eines der ` +
+    `größten zusammenhängenden Waldgebiete Hessens – aus der Luft schneller überschaubar.</p>` +
     `<a class="btn map-btn" href="/kontakt">Gebiet auf Karte ansehen</a></div>` +
     `<div class="cta"><h2>${e(c.pages.ctaTitle)}</h2><p>${e(c.pages.ctaText)}</p><h3>Komm in unser Team!</h3>` +
     `<a class="btn" href="/kontakt">Jetzt mitmachen</a> <a class="btn cta-outline" href="/kontakt">Kontakt aufnehmen</a>` +
@@ -83,6 +87,14 @@ export function home(c: SiteContent): string {
 }
 
 export function incidents(c: SiteContent): string {
+  if (c.incidents.length === 0) {
+    return pageHero("Einsätze", "Dokumentierte Einsätze und Übungen der Fachgruppe.") +
+      `<section class="wrap card"><p class="news-empty">Hier sind noch keine Einsätze ` +
+      `veröffentlicht. Aktuelle Einsatzberichte der Feuerwehr Biebertal erscheinen zeitnah ` +
+      `über den Instagram- und den WhatsApp-Kanal.</p>` +
+      `<p><a class="redtext" href="https://www.feuerwehr-biebertal.de/">Zur Feuerwehr Biebertal →</a></p></section>`;
+  }
+
   const list = c.incidents
     .map(
       (i) =>
@@ -146,6 +158,13 @@ export function training(c: SiteContent): string {
 }
 
 export function gallery(c: SiteContent): string {
+  if (c.gallery.length === 0) {
+    return pageHero("Galerie") +
+      `<section class="wrap card"><p class="news-empty">Die Galerie wird gerade aufgebaut. ` +
+      `Bilder aus Einsätzen und Übungen veröffentlichen wir erst, wenn die Einwilligung aller ` +
+      `abgebildeten Personen vorliegt.</p></section>`;
+  }
+
   const cards = c.gallery
     .map(
       (g) =>
@@ -205,9 +224,53 @@ function excerpt(text: string, limit = 180): string {
   return `${(lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trimEnd()} …`;
 }
 
-export function legalPage(title: string, text: string): string {
-  return pageHero(title) + `<section class="wrap card"><p><b>TODO:</b> ${e(text)}</p></section>`;
+/**
+ * Pflichtangaben nach § 5 TMG, übernommen aus dem Impressum der Feuerwehr Biebertal.
+ * Der rechtliche Hinweis bleibt stehen: dieses Angebot ist ein eigener Auftritt und
+ * muss vor der Veröffentlichung geprüft werden.
+ */
+export function imprint(c: SiteContent): string {
+  return (
+    pageHero("Impressum") +
+    `<section class="wrap card"><h2>Angaben gemäß § 5 TMG</h2>` +
+    `<p>Freiwillige Feuerwehr Biebertal<br>Mühlbergstraße 9<br>35444 Biebertal</p>` +
+    `<p>Telefon: <a href="tel:+49640969 0">+49 6409 69-0</a><br>` +
+    `E-Mail: <a href="mailto:${e(c.settings.email)}">${e(c.settings.email)}</a></p>` +
+    `<h2>Inhaltlich Verantwortlicher gemäß § 55 Abs. 2 RStV</h2>` +
+    `<p>Gemeindevorstand Biebertal<br>Mühlbergstraße 9<br>35444 Biebertal</p>` +
+    `<h2>Haftung für Links</h2>` +
+    `<p>Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte ` +
+    `externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber ` +
+    `verantwortlich.</p>` +
+    `<h2>Urheberrecht</h2>` +
+    `<p>Das Urheberrecht liegt bei der Freiwilligen Feuerwehr Biebertal sowie bei den Urhebern, ` +
+    `die Bild- und Textmaterial zur Verfügung gestellt haben. Das Logo der Feuerwehr Biebertal ` +
+    `wird mit Zustimmung der Feuerwehr Biebertal verwendet.</p>` +
+    `<p class="news-empty"><b>Vor dem Live-Gang prüfen:</b> Diese Angaben stammen aus dem ` +
+    `Impressum von feuerwehr-biebertal.de. Ob dieser eigenständige Auftritt zusätzliche oder ` +
+    `abweichende Angaben braucht, muss der Gemeindevorstand rechtlich freigeben.</p>` +
+    `</section>`
+  );
 }
+
+export function privacy(): string {
+  return (
+    pageHero("Datenschutzerklärung") +
+    `<section class="wrap card">` +
+    `<p>Diese Website wird als Cloudflare Worker betrieben. Beim Aufruf verarbeitet Cloudflare ` +
+    `technisch notwendige Verbindungsdaten. Die Seite bindet keine Werbe- oder Analysedienste ` +
+    `ein und setzt keine Tracking-Cookies. Ein Cookie wird ausschließlich im geschützten ` +
+    `Redaktionsbereich unter <code>/admin</code> gesetzt und dient dort der Anmeldung.</p>` +
+    `<p>Das Kontaktformular auf dieser Seite ist derzeit ohne Funktion; es werden darüber keine ` +
+    `Daten übermittelt oder gespeichert.</p>` +
+    `<p class="news-empty"><b>Vor dem Live-Gang prüfen:</b> Dieser Text beschreibt den ` +
+    `technischen Stand dieser Anwendung und ersetzt keine juristische Prüfung. Die vollständige ` +
+    `Datenschutzerklärung muss vor der Veröffentlichung freigegeben und an das tatsächliche ` +
+    `Hosting sowie an aktivierte Formulare angepasst werden.</p>` +
+    `</section>`
+  );
+}
+
 
 export function notFound(): string {
   return pageHero("Nicht gefunden") +

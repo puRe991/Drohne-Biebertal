@@ -119,20 +119,9 @@ function renderPublic(path: string, c: SiteContent): { status: number; title: st
     case "/kontakt":
       return { status: 200, title: "Kontakt", body: views.contact(c) };
     case "/impressum":
-      return {
-        status: 200,
-        title: "Impressum",
-        body: views.legalPage("Impressum", "Rechtlich geprüfte Angaben vor Live-Gang ergänzen."),
-      };
+      return { status: 200, title: "Impressum", body: views.imprint(c) };
     case "/datenschutz":
-      return {
-        status: 200,
-        title: "Datenschutz",
-        body: views.legalPage(
-          "Datenschutzerklärung",
-          "Datenschutzerklärung vor Live-Gang rechtlich prüfen und an Hosting, Formulare, Cookies und Medien anpassen.",
-        ),
-      };
+      return { status: 200, title: "Datenschutz", body: views.privacy() };
     default:
       return { status: 404, title: "Nicht gefunden", body: views.notFound() };
   }

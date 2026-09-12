@@ -61,6 +61,21 @@ describe("Datumsformat", () => {
   });
 });
 
+/** Eigenständiger Einsatz: die Tests sollen nicht an redaktionellen Inhalten hängen. */
+function incident(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "uebung-dünsberg".replace("ü", "ue"),
+    title: "Übung am Dünsberg",
+    date: "2026-09-12",
+    place: "Fellingshausen",
+    category: "Lageerkundung",
+    status: "abgeschlossen",
+    image: "https://example.com/bild.jpg",
+    description: "Beschreibung.",
+    ...overrides,
+  };
+}
+
 describe("Inhaltsvalidierung", () => {
   it("akzeptiert die Auslieferungsinhalte", () => {
     expect(() => validateContent(seedContent())).not.toThrow();
@@ -78,19 +93,19 @@ describe("Inhaltsvalidierung", () => {
 
   it("erkennt falsches Datumsformat", () => {
     const data = seedContent();
-    data.incidents[0]!.date = "12.09.2026";
+    data.incidents = [incident({ date: "12.09.2026" })];
     expect(() => validateContent(data)).toThrow(/YYYY-MM-DD/);
   });
 
   it("erkennt doppelte Einsatz-IDs", () => {
     const data = seedContent();
-    data.incidents[1]!.id = data.incidents[0]!.id;
+    data.incidents = [incident(), incident({ title: "Zweiter Einsatz" })];
     expect(() => validateContent(data)).toThrow(/doppelt/);
   });
 
   it("erkennt ungültige Einsatz-IDs", () => {
     const data = seedContent();
-    data.incidents[0]!.id = "Nicht Erlaubt!";
+    data.incidents = [incident({ id: "Nicht Erlaubt!" })];
     expect(() => validateContent(data)).toThrow(/Kleinbuchstaben/);
   });
 
@@ -172,6 +187,37 @@ describe("Team", () => {
     ]);
     // Kein Eintrag darf ein Stockfoto einer fremden Person tragen.
     expect(team.every((m) => (m.image ?? "") === "")).toBe(true);
+  });
+});
+
+describe("Redaktionelle Auslieferungsinhalte", () => {
+  it("trägt die Kontaktdaten aus dem offiziellen Impressum", () => {
+    const { settings } = seedContent();
+    expect(settings.address).toContain("Mühlbergstraße 9");
+    expect(settings.address).toContain("35444 Biebertal");
+    expect(settings.phone).toBe("06409 69-0");
+    expect(settings.email).toBe("info@feuerwehr-biebertal.de");
+  });
+
+  it("verlinkt nur belegte Kanäle, keine Platzhalter", () => {
+    const socials = Object.values(seedContent().settings.socials ?? {});
+    expect(socials.length).toBeGreaterThan(0);
+    expect(socials.every((url) => url.startsWith("https://"))).toBe(true);
+  });
+
+  it("enthält keine erfundenen Einsätze oder Galeriebilder", () => {
+    const data = seedContent();
+    expect(data.incidents).toEqual([]);
+    expect(data.gallery).toEqual([]);
+    expect(data.news).toEqual([]);
+  });
+
+  it("beschreibt die Technik ohne erfundenes Drohnenmodell", () => {
+    const features = seedContent().equipment.flatMap((item) => item.features).join(" ");
+    expect(features).toMatch(/Wärmebildkamera/);
+    expect(features).toMatch(/Lautsprecher/);
+    // Kein konkretes Modell: dafür gibt es keine Quelle.
+    expect(features).not.toMatch(/Mavic|Matrice|Phantom|Air \d/);
   });
 });
 

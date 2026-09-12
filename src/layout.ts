@@ -46,7 +46,7 @@ export function renderFooter(env: Env, c: SiteContent): string {
   const socials = Object.entries(c.settings.socials ?? {})
     .map(([name, href]) => {
       const url = safeUrl(href);
-      return url === "" ? `<span>${e(name)}</span>` : `<a href="${url}">${e(name)}</a>`;
+      return url === "" ? `<span>${e(name)}</span>` : `<a href="${url}" rel="noopener noreferrer">${e(name)}</a>`;
     })
     .join("");
 
@@ -54,9 +54,10 @@ export function renderFooter(env: Env, c: SiteContent): string {
     `<p>${e(c.settings.claim)}</p></div>` +
     `<div><h3>Kontakt</h3><p>${e(c.settings.address)}</p><p>${e(c.settings.email)}</p><p>${e(c.settings.phone)}</p></div>` +
     `<div><h3>Folge uns</h3>${socials}</div>` +
+    // Nur erreichbare, geprüfte Ziele - keine toten "#"-Links.
     `<div><h3>Wichtige Links</h3><a href="/datenschutz">Datenschutzerklärung</a><a href="/impressum">Impressum</a>` +
-    `<a href="https://www.feuerwehr-biebertal.de">Feuerwehr Biebertal</a>` +
-    `<a href="#">Kreisfeuerwehrverband Gießen</a><a href="#">Hessische Feuerwehr</a></div>` +
+    `<a href="https://www.feuerwehr-biebertal.de/" rel="noopener noreferrer">Feuerwehr Biebertal</a>` +
+    `<a href="https://www.feuerwehr-hessen.de/" rel="noopener noreferrer">Landesfeuerwehrverband Hessen</a></div>` +
     `<small>© ${new Date().getFullYear()} Freiwillige Feuerwehr Biebertal – Fachgruppe Drohne</small></footer></body></html>`;
 }
 
