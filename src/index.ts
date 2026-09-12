@@ -77,7 +77,7 @@ async function route(
     "Cache-Control": `public, max-age=${pageCacheSeconds(env)}, stale-while-revalidate=600`,
   });
   return withSecurityHeaders(
-    new Response(renderHeader(env, content, page.title) + page.body + renderFooter(content), {
+    new Response(renderHeader(env, content, page.title) + page.body + renderFooter(env, content), {
       status: page.status,
       headers,
     }),
@@ -85,6 +85,14 @@ async function route(
 }
 
 function renderPublic(path: string, c: SiteContent): { status: number; title: string; body: string } {
+  const newsMatch = /^\/news\/([a-z0-9-]+)$/.exec(path);
+  if (newsMatch) {
+    const body = views.newsDetail(c, newsMatch[1] as string);
+    return body
+      ? { status: 200, title: "News", body }
+      : { status: 404, title: "Nicht gefunden", body: views.notFound() };
+  }
+
   const incidentMatch = /^\/einsaetze\/([a-z0-9-]+)$/.exec(path);
   if (incidentMatch) {
     const body = views.incidentDetail(c, incidentMatch[1] as string);
@@ -96,6 +104,8 @@ function renderPublic(path: string, c: SiteContent): { status: number; title: st
   switch (path) {
     case "/":
       return { status: 200, title: "", body: views.home(c) };
+    case "/news":
+      return { status: 200, title: "News", body: views.news(c) };
     case "/einsaetze":
       return { status: 200, title: "Einsätze", body: views.incidents(c) };
     case "/technik":
@@ -149,7 +159,7 @@ async function adminPage(
   }
 
   return withSecurityHeaders(
-    new Response(renderHeader(env, content, "Admin") + body + renderFooter(content), { status: 200, headers }),
+    new Response(renderHeader(env, content, "Admin") + body + renderFooter(env, content), { status: 200, headers }),
   );
 }
 

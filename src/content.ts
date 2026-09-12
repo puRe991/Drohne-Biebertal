@@ -18,6 +18,14 @@ export interface Incident {
   duration?: string;
 }
 
+export interface NewsEntry {
+  id: string;
+  title: string;
+  date: string;
+  text: string;
+  image?: string;
+}
+
 export interface SiteContent {
   settings: {
     siteName: string;
@@ -38,8 +46,9 @@ export interface SiteContent {
     contactIntro: string;
   };
   areas: { title: string; text: string; icon?: string }[];
+  news: NewsEntry[];
   incidents: Incident[];
-  team: { name: string; role: string; qualification: string; image: string; order?: number }[];
+  team: { name: string; role: string; qualification?: string; image?: string; order?: number }[];
   equipment: { name: string; description: string; image: string; features: string[] }[];
   gallery: { url: string; title: string; category: string }[];
 }
@@ -80,7 +89,10 @@ export function validateContent(data: unknown): SiteContent {
   for (const key of ["settings", "pages", "areas", "incidents", "team", "equipment", "gallery"]) {
     if (!(key in record)) throw new ContentError(`Bereich fehlt: ${key}`);
   }
-  for (const key of ["areas", "incidents", "team", "equipment", "gallery"]) {
+  // "news" kam später dazu: ältere Datenstände ohne den Bereich bleiben gültig
+  // und werden als leere Liste behandelt.
+  if (record.news === undefined) record.news = [];
+  for (const key of ["areas", "news", "incidents", "team", "equipment", "gallery"]) {
     if (!Array.isArray(record[key])) throw new ContentError(`Bereich muss eine Liste sein: ${key}`);
   }
 
@@ -99,6 +111,23 @@ export function validateContent(data: unknown): SiteContent {
   const pagesRecord = pages as Record<string, unknown>;
   for (const key of ["heroHeadline", "heroKicker", "heroSubline", "ctaTitle", "ctaText", "training", "contactIntro"]) {
     requireString(pagesRecord, key, "pages");
+  }
+
+  const seenNews = new Set<string>();
+  for (const entry of record.news as unknown[]) {
+    if (typeof entry !== "object" || entry === null) throw new ContentError("Meldung ist kein Objekt.");
+    const item = entry as Record<string, unknown>;
+    for (const key of ["id", "title", "date", "text"]) requireString(item, key, "news[]");
+
+    const id = String(item.id);
+    if (!/^[a-z0-9-]+$/.test(id)) {
+      throw new ContentError(`Meldungs-ID darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten: ${id}`);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(item.date))) {
+      throw new ContentError(`Meldungsdatum muss YYYY-MM-DD sein: ${String(item.date)}`);
+    }
+    if (seenNews.has(id)) throw new ContentError(`Meldungs-ID ist doppelt vergeben: ${id}`);
+    seenNews.add(id);
   }
 
   const seen = new Set<string>();
@@ -159,4 +188,9 @@ export function encodeContent(content: SiteContent): string {
 export async function storeInfo(env: Env): Promise<{ revision: number; updatedAt: string | null }> {
   const info = await contentStore(env).info();
   return { revision: info.revision, updatedAt: info.updatedAt };
+}
+
+/** Meldungen nach Datum, neueste zuerst. */
+export function sortedNews(content: SiteContent): NewsEntry[] {
+  return [...content.news].sort((a, b) => b.date.localeCompare(a.date));
 }

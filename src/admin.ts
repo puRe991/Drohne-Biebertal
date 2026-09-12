@@ -1,4 +1,4 @@
-import { ContentError, encodeContent, loadContent, saveContent, type Incident, type SiteContent } from "./content.ts";
+import { ContentError, encodeContent, loadContent, saveContent, type Incident, type NewsEntry, type SiteContent } from "./content.ts";
 import { DEFAULT_ADMIN_EMAIL, isProduction, sessionLifetime, type Env } from "./env.ts";
 import { e, uniqueSlug } from "./html.ts";
 import {
@@ -80,7 +80,7 @@ function renderDashboard(
     : "";
 
   return (
-    `<section class="admin"><div class="adminnav"><a href="#incidents">Einsätze</a><a href="#json">Alle Inhalte</a>` +
+    `<section class="admin"><div class="adminnav"><a href="#news">News</a><a href="#incidents">Einsätze</a><a href="#json">Alle Inhalte</a>` +
     `<form method="post" action="/admin"><input type="hidden" name="action" value="logout">` +
     `<input type="hidden" name="csrf" value="${e(token)}"><button>Logout</button></form></div>` +
     `<h1>CMS Backend</h1>` +
@@ -88,7 +88,14 @@ function renderDashboard(
     warning +
     (saved ? `<p class="redtext">Gespeichert.</p>` : "") +
     notice +
-    `<div id="incidents" class="card"><h2>Einsatz anlegen</h2>` +
+    `<div id="news" class="card"><h2>Meldung anlegen</h2>` +
+    `<form method="post" action="/admin" class="grid formgrid">` +
+    `<input type="hidden" name="action" value="add_news"><input type="hidden" name="csrf" value="${e(token)}">` +
+    `<input name="title" placeholder="Überschrift" required><input name="date" type="date" required>` +
+    `<input name="image" type="url" placeholder="Bild-URL (https://…, optional)" style="grid-column:1/-1">` +
+    `<textarea name="text" placeholder="Meldungstext" style="grid-column:1/-1" required></textarea>` +
+    `<button class="btn red">Meldung speichern</button></form></div>` +
+    `<div id="incidents" class="card" style="margin-top:24px"><h2>Einsatz anlegen</h2>` +
     `<form method="post" action="/admin" class="grid formgrid">` +
     `<input type="hidden" name="action" value="add_incident"><input type="hidden" name="csrf" value="${e(token)}">` +
     `<input name="title" placeholder="Titel" required><input name="date" type="date" required>` +
@@ -147,6 +154,7 @@ export async function handleAdminPost(
 
   if (action === "save_json") return saveJson(env, form, session);
   if (action === "add_incident") return addIncident(env, form, session);
+  if (action === "add_news") return addNews(env, form, session);
   return redirect("/admin?error=unknown");
 }
 
@@ -183,6 +191,28 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
   };
 
   content.incidents.push(incident);
+  return persist(env, content, user);
+}
+
+async function addNews(env: Env, form: FormData, user: SessionUser): Promise<Response> {
+  const content = await loadContent(env);
+
+  const title = String(form.get("title") ?? "").trim();
+  const text = String(form.get("text") ?? "").trim();
+  if (title === "" || text === "") return redirect("/admin?error=validation");
+
+  const image = String(form.get("image") ?? "").trim();
+  if (image !== "" && !/^https?:\/\//i.test(image)) return redirect("/admin?error=validation");
+
+  const entry: NewsEntry = {
+    id: uniqueSlug(title, content.news.map((item) => item.id)),
+    title,
+    date: String(form.get("date") ?? "").trim(),
+    text,
+    ...(image !== "" ? { image } : {}),
+  };
+
+  content.news.push(entry);
   return persist(env, content, user);
 }
 

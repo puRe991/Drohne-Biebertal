@@ -59,3 +59,15 @@ export function uniqueSlug(title: string, existing: readonly string[]): string {
     if (!existing.includes(candidate)) return candidate;
   }
 }
+
+/**
+ * Initialen für Personen ohne Foto. Echte Teammitglieder bekommen bewusst keine
+ * Stockfotos fremder Menschen untergeschoben.
+ */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return (first + last).toUpperCase();
+}

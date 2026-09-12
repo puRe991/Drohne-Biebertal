@@ -13,9 +13,9 @@ import {
   verifyLogin,
   verifyPassword,
 } from "../src/auth.ts";
-import { seedContent, validateContent, ContentError } from "../src/content.ts";
+import { seedContent, sortedNews, validateContent, ContentError } from "../src/content.ts";
 import { configProblems, type Env } from "../src/env.ts";
-import { e, formatDate, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
+import { e, formatDate, initials, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
 
 const baseEnv = { APP_SECRET: "test-geheimnis", APP_ENV: "development" } as unknown as Env;
 
@@ -96,6 +96,82 @@ describe("Inhaltsvalidierung", () => {
 
   it("weist Listen an Objektstellen ab", () => {
     expect(() => validateContent([])).toThrow(ContentError);
+  });
+});
+
+describe("News", () => {
+  it("akzeptiert gültige Meldungen", () => {
+    const data = seedContent();
+    data.news = [{ id: "erste-meldung", title: "Erste Meldung", date: "2026-09-12", text: "Inhalt." }];
+    expect(() => validateContent(data)).not.toThrow();
+  });
+
+  it("erkennt falsches Datum und ungültige IDs", () => {
+    const withDate = seedContent();
+    withDate.news = [{ id: "x", title: "T", date: "12.09.2026", text: "Inhalt." }];
+    expect(() => validateContent(withDate)).toThrow(/YYYY-MM-DD/);
+
+    const withId = seedContent();
+    withId.news = [{ id: "Nicht Erlaubt", title: "T", date: "2026-09-12", text: "Inhalt." }];
+    expect(() => validateContent(withId)).toThrow(/Kleinbuchstaben/);
+  });
+
+  it("erkennt doppelte Meldungs-IDs", () => {
+    const data = seedContent();
+    data.news = [
+      { id: "doppelt", title: "A", date: "2026-09-12", text: "Inhalt." },
+      { id: "doppelt", title: "B", date: "2026-09-11", text: "Inhalt." },
+    ];
+    expect(() => validateContent(data)).toThrow(/doppelt/);
+  });
+
+  it("erkennt leeren Meldungstext", () => {
+    const data = seedContent();
+    data.news = [{ id: "leer", title: "T", date: "2026-09-12", text: "   " }];
+    expect(() => validateContent(data)).toThrow(/news\[\]\.text/);
+  });
+
+  it("bleibt zu Datenständen ohne news-Bereich kompatibel", () => {
+    // Inhalte, die vor der Einführung des Bereichs gespeichert wurden.
+    const data = seedContent() as unknown as Record<string, unknown>;
+    delete data.news;
+    const validated = validateContent(data);
+    expect(validated.news).toEqual([]);
+  });
+
+  it("sortiert Meldungen neueste zuerst", () => {
+    const data = seedContent();
+    data.news = [
+      { id: "alt", title: "Alt", date: "2026-01-05", text: "x" },
+      { id: "neu", title: "Neu", date: "2026-09-12", text: "x" },
+      { id: "mittel", title: "Mittel", date: "2026-05-01", text: "x" },
+    ];
+    expect(sortedNews(data).map((n) => n.id)).toEqual(["neu", "mittel", "alt"]);
+  });
+});
+
+describe("Team", () => {
+  it("bildet Initialen für Personen ohne Foto", () => {
+    expect(initials("Florian Clever")).toBe("FC");
+    expect(initials("Michele Schuster")).toBe("MS");
+    expect(initials("Sebastian Hose")).toBe("SH");
+    expect(initials("Maurice")).toBe("M");
+    expect(initials("  Tim   Antosch  ")).toBe("TA");
+    expect(initials("")).toBe("?");
+  });
+
+  it("führt alle sechs Mitglieder ohne fremde Fotos", () => {
+    const { team } = seedContent();
+    expect(team.map((m) => m.name)).toEqual([
+      "Florian Clever",
+      "Michele Schuster",
+      "Maurice Kunz",
+      "Tim Antosch",
+      "Markus Hofmann",
+      "Sebastian Hose",
+    ]);
+    // Kein Eintrag darf ein Stockfoto einer fremden Person tragen.
+    expect(team.every((m) => (m.image ?? "") === "")).toBe(true);
   });
 });
 
