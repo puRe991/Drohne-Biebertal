@@ -1,6 +1,6 @@
 import { handleAdminPost, renderAdmin } from "./admin.ts";
 import { CSRF_COOKIE, cookieHeader, newCsrfSecret, parseCookies, readSessionCookie, SESSION_COOKIE } from "./auth.ts";
-import { loadContent, type SiteContent } from "./content.ts";
+import { loadContent, storeInfo, type SiteContent } from "./content.ts";
 import { appEnv, appVersion, configProblems, isDebug, pageCacheSeconds, type Env } from "./env.ts";
 import { e } from "./html.ts";
 import { renderFooter, renderHeader } from "./layout.ts";
@@ -17,6 +17,8 @@ const SECURITY_HEADERS: Record<string, string> = {
     "form-action 'self'; frame-ancestors 'none'; base-uri 'self'",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 };
+
+export { ContentStore } from "./store.ts";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -41,7 +43,7 @@ async function route(
   url: URL,
   path: string,
 ): Promise<Response> {
-  // Probes zuerst: sie müssen auch antworten, wenn D1 gerade nicht erreichbar ist.
+  // Probes zuerst: sie müssen auch antworten, wenn der Inhaltsspeicher streikt.
   if (path === "/healthz" || path === "/livez") {
     return json(200, { status: "ok", env: appEnv(env), version: appVersion(env) });
   }
@@ -153,11 +155,13 @@ async function adminPage(
 
 async function readiness(env: Env): Promise<Response> {
   const problems = configProblems(env);
+  let revision: number | null = null;
+
   try {
-    await env.DB.prepare("SELECT 1 FROM cms_content WHERE id = ?1").bind("site").first();
+    revision = (await storeInfo(env)).revision;
   } catch (error) {
     problems.push(
-      `D1 nicht erreichbar oder Migration fehlt: ${error instanceof Error ? error.message : String(error)}`,
+      `Inhaltsspeicher nicht erreichbar: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
@@ -166,7 +170,8 @@ async function readiness(env: Env): Promise<Response> {
     status: ready ? "ready" : "unready",
     env: appEnv(env),
     version: appVersion(env),
-    store: "d1",
+    store: "durable-object",
+    revision,
     problems,
   });
 }

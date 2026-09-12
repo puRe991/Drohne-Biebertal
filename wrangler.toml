@@ -1,3 +1,6 @@
+# Ziel für lokale Deploys (`npm run deploy`). Cloudflare Workers Builds ignoriert
+# diesen Wert und deployt auf den verbundenen Worker - eine Abweichung erzeugt dort
+# nur eine Warnung, keinen Fehler.
 name = "drohne-biebertal"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
@@ -18,14 +21,17 @@ PAGE_CACHE_SECONDS = "60"
 SESSION_LIFETIME = "7200"
 ADMIN_EMAIL = "admin@feuerwehr-biebertal.local"
 
-# D1 speichert die redaktionellen Inhalte ausserhalb des Workers.
-# Vor dem ersten Deploy anlegen:  npx wrangler d1 create drohne-biebertal
-# Die ausgegebene database_id hier eintragen.
-[[d1_databases]]
-binding = "DB"
-database_name = "drohne-biebertal"
-database_id = "PLATZHALTER_BITTE_ERSETZEN"
-migrations_dir = "migrations"
+# Speicher für die redaktionellen Inhalte. Ein Durable Object wird beim Deploy
+# automatisch mit angelegt - es muss keine Datenbank erstellt und keine ID
+# eingetragen werden.
+[[durable_objects.bindings]]
+name = "CONTENT"
+class_name = "ContentStore"
+
+[[migrations]]
+tag = "v1"
+# SQLite-gestützte Durable Objects sind auch im kostenlosen Workers-Tarif nutzbar.
+new_sqlite_classes = ["ContentStore"]
 
 # Secrets werden NICHT hier abgelegt, sondern gesetzt mit:
 #   npx wrangler secret put ADMIN_PASSWORD_HASH

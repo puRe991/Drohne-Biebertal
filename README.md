@@ -1,18 +1,22 @@
 # Feuerwehr Biebertal – Fachgruppe Drohne
 
-Website mit integriertem Flat-File-CMS, betrieben als **Cloudflare Worker** mit **D1**
-als Datenbank. Die Seiten werden serverseitig gerendert, das Redaktions-Backend liegt
-unter `/admin`.
+Website mit integriertem Flat-File-CMS, betrieben als **Cloudflare Worker**. Die Seiten
+werden serverseitig gerendert, das Redaktions-Backend liegt unter `/admin`.
+
+**Es wird keine Datenbank benötigt.** Die Inhalte liegen in einem Durable Object, das
+Cloudflare beim Deploy automatisch mit anlegt.
 
 ## Tech-Stack und Begründung
 
 - **Cloudflare Workers (TypeScript)**: Läuft in Cloudflares Edge-Netz, kein Server und
   kein Container zu pflegen. Die vorherige PHP-Anwendung konnte dort nicht laufen –
   Workers führen kein PHP aus.
-- **D1 (SQLite) für Inhalte**: Das Dateisystem eines Workers ist schreibgeschützt und
-  flüchtig. Redaktionelle Änderungen gehören deshalb in eine Datenbank, sonst wären sie
-  beim nächsten Deploy verloren. `data/site.json` bleibt die versionierte
-  Auslieferungsfassung und füllt eine leere Datenbank einmalig.
+- **Durable Object für Inhalte**: Das Dateisystem eines Workers ist schreibgeschützt und
+  flüchtig – redaktionelle Änderungen wären beim nächsten Deploy verloren. Ein Durable
+  Object persistiert sie und wird beim Deploy automatisch angelegt, anders als D1 oder
+  KV also ohne vorher erstellte Ressource und ohne ID in der Konfiguration.
+  `data/site.json` bleibt die versionierte Auslieferungsfassung und füllt den leeren
+  Speicher beim ersten Aufruf.
 - **Workers Assets** liefert `public/` (Stylesheet, `robots.txt`) direkt aus dem
   Cloudflare-Cache aus.
 - **Keine Laufzeit-Abhängigkeiten**: Sessions, CSRF-Schutz und Passwort-Hashing nutzen
@@ -22,10 +26,9 @@ unter `/admin`.
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars          # lokale Secrets
+cp .dev.vars.example .dev.vars                   # lokale Secrets
 npm run hash-password -- 'MeinLokalesPasswort'   # Ausgabe in .dev.vars eintragen
-npm run db:migrate:local                # D1-Tabellen lokal anlegen
-npm run dev                             # http://localhost:8787
+npm run dev                                      # http://localhost:8787
 ```
 
 - Öffentliche Website: <http://localhost:8787>
@@ -35,29 +38,22 @@ Ohne gesetztes `ADMIN_PASSWORD_HASH` gilt lokal der Entwicklungszugang
 `admin@feuerwehr-biebertal.local` / `Drohne112!`. In Produktion ist dieser Zugang
 deaktiviert – ohne Secret bleibt das Backend gesperrt.
 
-## Erstmaliges Deployment
+## Deployment
 
-Ein Deploy ohne diese Schritte schlägt fehl, weil `wrangler.toml` noch eine
-Platzhalter-Datenbank-ID enthält.
+`npx wrangler deploy` läuft ohne Vorbereitung durch – es gibt keine Datenbank anzulegen
+und keine ID einzutragen. Der Durable Object entsteht beim ersten Deploy, und beim
+ersten Aufruf übernimmt der Worker die Inhalte aus `data/site.json`.
+
+Damit das Backend nutzbar wird, danach noch zwei Secrets setzen:
 
 ```bash
-# 1. Datenbank anlegen und die ausgegebene database_id in wrangler.toml eintragen
-npx wrangler d1 create drohne-biebertal
-
-# 2. Tabellen in der Cloud anlegen
-npm run db:migrate
-
-# 3. Secrets setzen (erscheinen nie im Repository)
 npm run hash-password -- 'EinStarkesPasswort'
 npx wrangler secret put ADMIN_PASSWORD_HASH
 npm run secret
 npx wrangler secret put APP_SECRET
-
-# 4. Veröffentlichen
-npm run deploy
 ```
 
-Beim ersten Aufruf übernimmt der Worker die Inhalte aus `data/site.json` in D1.
+Ohne diese Secrets läuft die öffentliche Website normal, `/admin` bleibt gesperrt.
 
 ### Automatischer Deploy über GitHub
 
@@ -95,16 +91,14 @@ Vertrauliche Werte ausschliesslich als Secret (`npx wrangler secret put`):
 | Pfad | Zweck |
 | --- | --- |
 | `/healthz` | Liveness – antwortet ohne Datenbankzugriff |
-| `/readyz` | Readiness – prüft D1 und meldet fehlende Secrets (HTTP 503 bei Problemen) |
+| `/readyz` | Readiness – prüft den Inhaltsspeicher und meldet fehlende Secrets (HTTP 503 bei Problemen) |
 
 Logs live mitlesen: `npx wrangler tail`.
 
-Inhalte sichern und zurückspielen:
-
-```bash
-npx wrangler d1 execute drohne-biebertal --remote \
-  --command "SELECT payload FROM cms_content WHERE id='site';" --json > backup.json
-```
+Inhalte sichern: Im Backend unter `/admin` steht das vollständige JSON im Textfeld
+„Redaktionelle Inhalte bearbeiten“ – kopieren und ablegen. Zum Zurückspielen dasselbe
+Feld überschreiben und speichern. Die versionierte Auslieferungsfassung bleibt jederzeit
+in `data/site.json` erhalten.
 
 ## CMS-Funktionen
 
@@ -121,7 +115,7 @@ npx wrangler d1 execute drohne-biebertal --remote \
 ```bash
 npm run typecheck   # TypeScript ohne Emit
 npm test            # Unit-Tests (Vitest)
-npm run dev         # lokaler Worker samt lokaler D1
+npm run dev         # lokaler Worker samt lokalem Speicher
 ```
 
 ## Sicherheitshinweise
@@ -138,7 +132,8 @@ npm run dev         # lokaler Worker samt lokaler D1
 
 Alle Bilder werden derzeit als externe URL referenziert. Ein Datei-Upload ist bewusst
 nicht enthalten: Workers haben kein beschreibbares Dateisystem. Für eigene Medien
-eignet sich ein R2-Bucket, der dem Worker als Binding zugewiesen wird.
+eignet sich ein R2-Bucket, der dem Worker als Binding zugewiesen wird – der muss dann
+allerdings, anders als der Durable Object, einmalig angelegt werden.
 
 ## Rechtliche und redaktionelle Hinweise
 

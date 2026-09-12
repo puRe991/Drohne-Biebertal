@@ -10,9 +10,6 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:create": "wrangler d1 create drohne-biebertal",
-    "db:migrate": "wrangler d1 migrations apply drohne-biebertal --remote",
-    "db:migrate:local": "wrangler d1 migrations apply drohne-biebertal --local",
     "hash-password": "node scripts/hash-password.mjs",
     "secret": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
   },
