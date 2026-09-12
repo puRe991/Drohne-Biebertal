@@ -42,7 +42,15 @@
       "icon": "camera"
     }
   ],
-  "news": [],
+  "news": [
+    {
+      "id": "150-jahre-feuerwehr-lich",
+      "title": "Zu Gast beim Jubiläum der Feuerwehr Lich",
+      "date": "2026-08-13",
+      "text": "Die Freiwillige Feuerwehr Lich hat Mitte August ihr 150-jähriges Bestehen gefeiert – gemeinsam mit dem 80-jährigen Jubiläum des Kreisfeuerwehrverbandes Gießen. Eröffnet wurde das Festwochenende am Donnerstagabend mit einem Großen Zapfenstreich vor rund 1200 Zuschauern, gestaltet von 80 Musikerinnen und Musikern aus den Feuerwehrmusikzügen des Landkreises Gießen. Zum Jubiläumsjahr gehörte außerdem ein Festzug mit 92 historischen Feuerwehrfahrzeugen, die anschließend in Lich aus nächster Nähe besichtigt werden konnten.\n\nAuch die Fachgruppe Drohne der Feuerwehr Biebertal war bei der Ausstellung vor Ort. Solche Jubiläen sind weit mehr als ein Fest: Hier treffen sich die Wehren der Region, tauschen Erfahrungen aus und zeigen, wie sich die Technik über anderthalb Jahrhunderte entwickelt hat – von der Handdruckspritze bis zum Wärmebild aus der Luft.",
+      "image": ""
+    }
+  ],
   "incidents": [],
   "team": [
     {

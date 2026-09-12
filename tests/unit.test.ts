@@ -209,7 +209,15 @@ describe("Redaktionelle Auslieferungsinhalte", () => {
     const data = seedContent();
     expect(data.incidents).toEqual([]);
     expect(data.gallery).toEqual([]);
-    expect(data.news).toEqual([]);
+  });
+
+  it("liefert gültige Meldungen aus", () => {
+    const { news } = seedContent();
+    expect(() => validateContent(seedContent())).not.toThrow();
+    for (const entry of news) {
+      expect(entry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(entry.text.trim().length).toBeGreaterThan(80);
+    }
   });
 
   it("beschreibt die Technik ohne erfundenes Drohnenmodell", () => {
