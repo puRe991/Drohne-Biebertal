@@ -44,10 +44,24 @@
   ],
   "news": [
     {
+      "id": "einsatzdrohne-vorgestellt",
+      "title": "Vorgestellt: unsere Einsatzdrohne",
+      "date": "2026-09-12",
+      "text": "Biebertal ist die erste Freiwillige Feuerwehr im Landkreis Gießen, die in Einsätzen durch eine Drohne unterstützt wird. Das Gerät der Firma DJI ist eine Dauerleihgabe der Jagdgenossenschaft Biebertal an die Feuerwehr – eine Zusammenarbeit, von der beide Seiten profitieren.\n\nNeben einer Sichtkamera trägt die Drohne eine Wärmebildkamera, Scheinwerfer zum Ausleuchten der Einsatzstelle, eine Signalleuchte und einen Lautsprecher für Durchsagen an Einsatzkräfte und Bevölkerung. Damit unterstützt sie Personensuchen, spürt Glutnester in Waldbrandlagen auf und liefert bei Großschadenslagen ein Bild der gesamten Lage – innerhalb der Gemeinde und überörtlich im Kreisgebiet.\n\nVerlastet ist die Drohne auf dem Biebertaler Einsatzleitwagen. Auf dessen Monitore werden die Bilder im Einsatz live übertragen, sodass die Einsatzleitung mitsieht, was die Kamera sieht.",
+      "image": ""
+    },
+    {
+      "id": "rehkitzrettung-jagdgenossenschaft",
+      "title": "Wärmebild gegen die Mähmaschine: Rehkitzrettung",
+      "date": "2026-09-12",
+      "text": "Nicht jeder Einsatz der Fachgruppe ist ein Notfall. Gemeinsam mit der Jagdgenossenschaft Biebertal unterstützt die Drohne die Rettung von Rehkitzen vor Mähmaschinen.\n\nDer Hintergrund: Rehkitze fliehen in den ersten Lebenswochen nicht, sondern drücken sich reglos ins hohe Gras. Für den Fahrer eines Mähwerks sind sie damit praktisch unsichtbar. Aus der Luft dagegen zeichnet sich ein warmer Körper im kühlen Morgengras deutlich auf der Wärmebildkamera ab. Wird ein Kitz gefunden, kann es vor dem Mähen aus der Fläche gebracht werden.\n\nFür die Fachgruppe ist das zugleich wertvolle Praxis: Es ist dieselbe Technik und dieselbe Suchsystematik, die im Ernstfall bei der Suche nach vermissten Personen gebraucht wird.",
+      "image": ""
+    },
+    {
       "id": "150-jahre-feuerwehr-lich",
-      "title": "Zu Gast beim Jubiläum der Feuerwehr Lich",
+      "title": "Fachgruppe Drohne stellt bei 150 Jahre Feuerwehr Lich aus",
       "date": "2026-08-13",
-      "text": "Die Freiwillige Feuerwehr Lich hat Mitte August ihr 150-jähriges Bestehen gefeiert – gemeinsam mit dem 80-jährigen Jubiläum des Kreisfeuerwehrverbandes Gießen. Eröffnet wurde das Festwochenende am Donnerstagabend mit einem Großen Zapfenstreich vor rund 1200 Zuschauern, gestaltet von 80 Musikerinnen und Musikern aus den Feuerwehrmusikzügen des Landkreises Gießen. Zum Jubiläumsjahr gehörte außerdem ein Festzug mit 92 historischen Feuerwehrfahrzeugen, die anschließend in Lich aus nächster Nähe besichtigt werden konnten.\n\nAuch die Fachgruppe Drohne der Feuerwehr Biebertal war bei der Ausstellung vor Ort. Solche Jubiläen sind weit mehr als ein Fest: Hier treffen sich die Wehren der Region, tauschen Erfahrungen aus und zeigen, wie sich die Technik über anderthalb Jahrhunderte entwickelt hat – von der Handdruckspritze bis zum Wärmebild aus der Luft.",
+      "text": "Die Freiwillige Feuerwehr Lich hat Mitte August ihr 150-jähriges Bestehen gefeiert – gemeinsam mit dem 80-jährigen Jubiläum des Kreisfeuerwehrverbandes Gießen. Eröffnet wurde das Festwochenende am Donnerstagabend mit einem Großen Zapfenstreich vor rund 1200 Zuschauern, gestaltet von 80 Musikerinnen und Musikern aus den Feuerwehrmusikzügen des Landkreises Gießen. Zum Jubiläumsjahr gehörte außerdem ein Festzug mit 92 historischen Feuerwehrfahrzeugen, die anschließend in Lich aus nächster Nähe besichtigt werden konnten.\n\nDie Fachgruppe Drohne der Feuerwehr Biebertal war mit einem eigenen Ausstellungsstand vertreten und hat ihre Technik gezeigt: Wärmebildkamera, Scheinwerfer und Lautsprecher sowie die Live-Übertragung des Drohnenbildes auf die Monitore des Einsatzleitwagens.\n\nSolche Jubiläen sind weit mehr als ein Fest: Hier treffen sich die Wehren der Region, tauschen Erfahrungen aus und zeigen nebeneinander, wie sich die Technik über anderthalb Jahrhunderte entwickelt hat – von der Handdruckspritze bis zum Wärmebild aus der Luft.",
       "image": ""
     }
   ],
