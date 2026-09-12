@@ -55,16 +55,14 @@ npx wrangler secret put APP_SECRET
 
 Ohne diese Secrets läuft die öffentliche Website normal, `/admin` bleibt gesperrt.
 
-### Automatischer Deploy über GitHub
+### Automatischer Deploy
 
-`.github/workflows/deploy.yml` veröffentlicht jeden Push auf `main`. Dafür im
-Repository zwei Secrets hinterlegen:
+Den Deploy übernimmt Cloudflare Workers Builds: Die Git-Integration ist mit dem
+Repository verbunden und führt bei jedem Push auf `main` den Deploy-Befehl
+`npx wrangler deploy` aus. Es sind dafür keine GitHub-Secrets nötig.
 
-- `CLOUDFLARE_API_TOKEN` – Token mit der Berechtigung *Edit Cloudflare Workers*
-- `CLOUDFLARE_ACCOUNT_ID`
-
-Wird stattdessen die Cloudflare-eigene Git-Integration genutzt (Build-Befehl
-`npx wrangler deploy`), müssen `database_id` und die Secrets ebenfalls gesetzt sein.
+`.github/workflows/ci.yml` prüft bei jedem Push und Pull Request Typen, Tests und
+den Deploy-Probelauf – veröffentlicht aber nichts.
 
 ## Konfiguration
 
