@@ -102,7 +102,11 @@ function renderDashboard(
     `<input name="place" placeholder="Ort" required>` +
     `<select name="category"><option>Personensuche</option><option>Lageerkundung</option>` +
     `<option>Wärmebild</option><option>Dokumentation</option></select>` +
+    `<select name="unit"><option value="feuerwehr">Feuerwehr (allgemein)</option>` +
+    `<option value="drohne">Fachgruppe Drohne im Einsatz</option></select>` +
+    `<input name="number" placeholder="Amtl. Einsatznummer (z. B. 64/2026, optional)">` +
     `<input name="duration" placeholder="Dauer"><input name="image" type="url" placeholder="Bild-URL (https://…)">` +
+    `<input name="source" type="url" placeholder="Beleg-URL (Pressebericht, optional)" style="grid-column:1/-1">` +
     `<textarea name="description" placeholder="Beschreibung" style="grid-column:1/-1" required></textarea>` +
     `<button class="btn red">Speichern</button></form></div>` +
     `<div id="json" class="card" style="margin-top:24px"><h2>Redaktionelle Inhalte bearbeiten</h2>` +
@@ -178,14 +182,28 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
   // Nur http(s) zulassen; eine javascript:-URL darf nicht ins src-Attribut wandern.
   if (image !== "" && !/^https?:\/\//i.test(image)) return redirect("/admin?error=validation");
 
+  const unit = String(form.get("unit") ?? "feuerwehr");
+
+  const source = String(form.get("source") ?? "").trim();
+  if (source !== "" && !/^https?:\/\//i.test(source)) return redirect("/admin?error=validation");
+
+  const date = String(form.get("date") ?? "").trim();
+  const number = String(form.get("number") ?? "").trim();
+  if (number !== "" && !new RegExp(`^\\d+/${date.slice(0, 4)}$`).test(number)) {
+    return redirect("/admin?error=validation");
+  }
+
   const incident: Incident = {
     id: uniqueSlug(title, content.incidents.map((entry) => entry.id)),
     title,
-    date: String(form.get("date") ?? "").trim(),
+    date,
     place: String(form.get("place") ?? "").trim(),
     category: String(form.get("category") ?? "Lageerkundung"),
     status: "abgeschlossen",
+    unit: unit === "drohne" ? "drohne" : "feuerwehr",
     duration: String(form.get("duration") ?? "").trim(),
+    ...(source !== "" ? { source } : {}),
+    ...(number !== "" ? { number } : {}),
     image: image !== "" ? image : "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
     description: String(form.get("description") ?? "").trim(),
   };

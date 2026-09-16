@@ -13,7 +13,17 @@ import {
   verifyLogin,
   verifyPassword,
 } from "../src/auth.ts";
-import { fingerprint, seedContent, seedDecision, sortedNews, validateContent, ContentError } from "../src/content.ts";
+import {
+  fingerprint,
+  incidentNumbers,
+  incidentYears,
+  incidentsInYear,
+  seedContent,
+  seedDecision,
+  sortedNews,
+  validateContent,
+  ContentError,
+} from "../src/content.ts";
 import { configProblems, type Env } from "../src/env.ts";
 import { e, formatDate, initials, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
 
@@ -112,6 +122,55 @@ describe("Inhaltsvalidierung", () => {
   it("weist Listen an Objektstellen ab", () => {
     expect(() => validateContent([])).toThrow(ContentError);
   });
+
+  it("erkennt ungültige Einsatz-Einheit", () => {
+    const data = seedContent();
+    data.incidents = [incident({ unit: "sonstiges" })];
+    expect(() => validateContent(data)).toThrow(/Einheit/);
+  });
+
+  it("erkennt doppelte Jahresstatistik-Jahre", () => {
+    const data = seedContent();
+    data.yearlyStats = [{ year: 2024, total: 1 }, { year: 2024, total: 2 }];
+    expect(() => validateContent(data)).toThrow(/doppelt/);
+  });
+});
+
+describe("Einsatznummern und Archiv", () => {
+  it("übernimmt nur die amtlich erfasste Einsatznummer, ohne eigene Zählung", () => {
+    const data = seedContent();
+    data.incidents = [
+      incident({ id: "a", date: "2026-03-01", number: "61/2026" }),
+      incident({ id: "b", date: "2026-01-10", title: "Ohne Nummer" }),
+      incident({ id: "c", date: "2025-12-01", title: "Vorjahr", number: "12/2025" }),
+    ];
+    const numbers = incidentNumbers(data);
+    expect(numbers.get("a")).toBe("61/2026");
+    expect(numbers.has("b")).toBe(false);
+    expect(numbers.get("c")).toBe("12/2025");
+  });
+
+  it("weist eine Einsatznummer ab, die nicht zum Jahr des Datums passt", () => {
+    const data = seedContent();
+    data.incidents = [incident({ number: "5/2025", date: "2026-01-10" })];
+    expect(() => validateContent(data)).toThrow(/passt nicht zum Jahr/);
+  });
+
+  it("weist ein falsches Einsatznummer-Format ab", () => {
+    const data = seedContent();
+    data.incidents = [incident({ number: "abc" })];
+    expect(() => validateContent(data)).toThrow(/Muster/);
+  });
+
+  it("gruppiert Einsätze nach Jahr für das Archiv", () => {
+    const data = seedContent();
+    data.incidents = [
+      incident({ id: "a", date: "2026-03-01" }),
+      incident({ id: "c", date: "2025-12-01", title: "Vorjahr" }),
+    ];
+    expect(incidentYears(data)).toEqual([2026, 2025]);
+    expect(incidentsInYear(data, 2025).map((i) => i.id)).toEqual(["c"]);
+  });
 });
 
 describe("News", () => {
@@ -205,10 +264,18 @@ describe("Redaktionelle Auslieferungsinhalte", () => {
     expect(socials.every((url) => url.startsWith("https://"))).toBe(true);
   });
 
-  it("enthält keine erfundenen Einsätze oder Galeriebilder", () => {
+  it("enthält keine erfundenen Galeriebilder", () => {
     const data = seedContent();
-    expect(data.incidents).toEqual([]);
     expect(data.gallery).toEqual([]);
+  });
+
+  it("belegt jeden ausgelieferten Einsatz mit einer Quelle und amtlichen Nummer", () => {
+    const data = seedContent();
+    expect(data.incidents.length).toBeGreaterThan(0);
+    for (const entry of data.incidents) {
+      expect(entry.source, `Einsatz ${entry.id} ohne Quelle`).toBeTruthy();
+      expect(entry.number, `Einsatz ${entry.id} ohne amtliche Nummer`).toBeTruthy();
+    }
   });
 
   it("liefert gültige Meldungen aus", () => {

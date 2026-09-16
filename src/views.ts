@@ -1,5 +1,13 @@
-import { sortedNews, type SiteContent } from "./content.ts";
-import { e, formatDate, initials } from "./html.ts";
+import {
+  incidentNumbers,
+  incidentsInYear,
+  incidentYears,
+  sortedNews,
+  type Incident,
+  type SiteContent,
+  type YearlyStat,
+} from "./content.ts";
+import { e, formatDate, initials, safeUrl } from "./html.ts";
 import { imgTag, pageHero } from "./layout.ts";
 
 /** Foto wenn vorhanden, sonst Initialen. */
@@ -14,6 +22,51 @@ function personRole(member: { role: string; qualification?: string }): string {
   return e(member.role) + (qualification !== "" ? `<br>${e(qualification)}` : "");
 }
 
+/** Status als sprechendes Kürzel für die Ticker-Badge. */
+function tickerStatusLabel(status: string): string {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "" || normalized === "abgeschlossen") return "Beendet";
+  if (normalized === "laufend" || normalized === "im einsatz") return "Läuft";
+  return status;
+}
+
+/** Eine Zeile im Einsatzticker: Status-Punkt, Einsatznummer, Zeit/Ort, Titel, Kategorie. */
+function tickerRow(i: Incident, numbers: Map<string, string>): string {
+  const status = tickerStatusLabel(i.status);
+  const live = status === "Läuft";
+  const number = numbers.get(i.id);
+  return (
+    `<a class="ticker-row${live ? " ticker-row-live" : ""}" href="/einsaetze/${e(i.id)}">` +
+    `<span class="ticker-dot" aria-hidden="true"></span>` +
+    `<span class="ticker-main">` +
+    `<span class="ticker-meta">${number ? `<span class="ticker-number">Einsatz ${e(number)}</span> · ` : ""}` +
+    `<b>${e(formatDate(i.date))}</b> · ${e(i.place)}` +
+    `<span class="ticker-status ${live ? "ticker-status-live" : ""}">${e(status)}</span></span>` +
+    `<span class="ticker-title">${e(i.title)}</span>` +
+    `</span><span class="badge ticker-badge">${e(i.category)}</span></a>`
+  );
+}
+
+/** Ein Ticker-Panel mit Überschrift, Live-Indikator und bis zu `limit` Zeilen. */
+function tickerPanel(
+  title: string,
+  subtitle: string,
+  items: Incident[],
+  numbers: Map<string, string>,
+  emptyText: string,
+  limit = 5,
+): string {
+  const rows = items.length === 0
+    ? `<p class="news-empty">${e(emptyText)}</p>`
+    : items.slice(0, limit).map((i) => tickerRow(i, numbers)).join("");
+  return (
+    `<div class="ticker-panel"><div class="ticker-head">` +
+    `<span class="ticker-live-dot" aria-hidden="true"></span>` +
+    `<div><h3>${e(title)}</h3><p>${e(subtitle)}</p></div></div>` +
+    `<div class="ticker-list">${rows}</div></div>`
+  );
+}
+
 export function home(c: SiteContent): string {
   const primary = c.equipment[0];
   const areas = c.areas
@@ -24,18 +77,6 @@ export function home(c: SiteContent): string {
     )
     .join("");
 
-  const incidentCards = c.incidents.length === 0
-    ? `<p class="news-empty">Einsatzberichte veröffentlichen wir über die Kanäle der ` +
-      `Feuerwehr Biebertal.</p>`
-    : c.incidents
-        .map(
-          (i) =>
-            `<a class="incident" href="/einsaetze/${e(i.id)}">${imgTag(i.image, "")}` +
-            `<div><span class="badge">EINSATZ</span><small style="float:right">${e(formatDate(i.date))}</small>` +
-            `<b style="display:block">${e(i.title)}</b><span>${e(i.place)}</span><p>${e(i.description)}</p></div></a>`,
-        )
-        .join("");
-
   const teamCards = sortedTeam(c)
     .map((m) => `<div>${personAvatar(m)}<b>${e(m.name)}</b><p>${personRole(m)}</p></div>`)
     .join("");
@@ -44,6 +85,33 @@ export function home(c: SiteContent): string {
     ? `${imgTag(primary.image, "equip-img", primary.name)}<h3>${e(primary.name)}</h3>` +
       `<ul class="features">${primary.features.map((f) => `<li>${e(f)}</li>`).join("")}</ul>`
     : "<p>Noch keine Technik erfasst.</p>";
+
+  const currentYear = new Date().getUTCFullYear();
+  const numbers = incidentNumbers(c);
+  const currentYearIncidents = incidentsInYear(c, currentYear);
+  const currentYearDrone = currentYearIncidents.filter((i) => i.unit === "drohne");
+  const olderYears = incidentYears(c).filter((year) => year !== currentYear);
+
+  const einsatzticker =
+    `<section class="wrap"><h2 class="section-title">Einsatzticker ${currentYear}</h2>` +
+    `<div class="grid ticker-grid">` +
+    tickerPanel(
+      "Feuerwehr Biebertal",
+      `Einsätze ${currentYear}`,
+      currentYearIncidents,
+      numbers,
+      "In diesem Jahr sind noch keine Einsätze veröffentlicht.",
+    ) +
+    tickerPanel(
+      "Fachgruppe Drohne",
+      `Drohneneinsätze ${currentYear}`,
+      currentYearDrone,
+      numbers,
+      "Die Drohne war dieses Jahr noch bei keinem veröffentlichten Einsatz im Einsatz.",
+    ) +
+    `</div><p><a class="redtext" href="/einsaetze">Alle Einsätze ansehen →</a>` +
+    (olderYears.length > 0 ? ` <a class="redtext" href="/einsaetze#archiv">Archiv ${olderYears[olderYears.length - 1]}–${olderYears[0]} →</a>` : "") +
+    `</p></section>`;
 
   const latestNews = sortedNews(c).slice(0, 3);
   const newsTeaser = latestNews.length === 0
@@ -64,12 +132,11 @@ export function home(c: SiteContent): string {
     `<h1>${e(c.pages.heroHeadline)}</h1><p>${e(c.pages.heroSubline)}</p>` +
     `<p><a class="btn red" href="/technik">Mehr erfahren</a> <a class="btn" href="/einsaetze">Aktuelle Einsätze</a></p>` +
     `</div></section>` +
+    einsatzticker +
     `<section class="wrap"><h2 class="section-title">Unsere Einsatzbereiche</h2>` +
     `<div class="grid cards4">${areas}</div></section>` +
     newsTeaser +
-    `<section class="wrap grid cols3">` +
-    `<div class="card"><h2 class="section-title">Aktuelle Einsätze</h2>${incidentCards}` +
-    `<a class="redtext" href="/einsaetze">Alle Einsätze ansehen →</a></div>` +
+    `<section class="wrap grid cards4">` +
     `<div class="card"><h2 class="section-title">Unser Team</h2><div class="grid teamgrid">${teamCards}</div>` +
     `<a class="redtext" href="/team">Mehr über unser Team →</a></div>` +
     `<div class="card"><h2 class="section-title">Unsere Technik</h2>${equipmentCard}` +
@@ -86,37 +153,98 @@ export function home(c: SiteContent): string {
   );
 }
 
+/** Eine Einsatzkarte für die Listenansicht, inklusive laufender Einsatznummer des Jahres. */
+function incidentCard(i: Incident, numbers: Map<string, string>): string {
+  const number = numbers.get(i.id);
+  return (
+    `<article class="card incident">${imgTag(i.image, "")}<div>` +
+    (number ? `<span class="badge badge-number">Einsatz ${e(number)}</span> ` : "") +
+    `<span class="badge">${e(i.category)}</span>` +
+    (i.unit === "drohne" ? ` <span class="badge badge-drone">DROHNE IM EINSATZ</span>` : "") +
+    `<h2><a href="/einsaetze/${e(i.id)}">${e(i.title)}</a></h2>` +
+    `<p><b>${e(formatDate(i.date))}</b> · ${e(i.place)} · ${e(i.status)}</p><p>${e(i.description)}</p></div></article>`
+  );
+}
+
+/** Amtliche Jahresstatistik als Tabelle, mit Beleglink wo vorhanden. */
+function yearlyStatsTable(stats: YearlyStat[]): string {
+  if (stats.length === 0) return "";
+  const rows = [...stats]
+    .sort((a, b) => b.year - a.year)
+    .map((s) => {
+      const sourceUrl = safeUrl(s.source);
+      const sourceLink = sourceUrl !== "" ? ` <a class="redtext" href="${sourceUrl}" rel="noopener noreferrer" target="_blank">Quelle</a>` : "";
+      return `<tr><td><b>${e(String(s.year))}</b></td><td>${e(String(s.total))} Einsätze</td>` +
+        `<td>${e(s.note ?? "")}${sourceLink}</td></tr>`;
+    })
+    .join("");
+  return (
+    `<div class="card" style="margin-top:24px"><h2 class="section-title">Amtliche Jahresstatistik</h2>` +
+    `<p class="news-empty">Gesamtzahlen der Freiwilligen Feuerwehr Biebertal aus Presseberichten zu den ` +
+    `Jahreshauptversammlungen - nicht die einzelnen, unten gelisteten Einsatzberichte dieser Seite.</p>` +
+    `<table class="stats-table"><tbody>${rows}</tbody></table></div>`
+  );
+}
+
 export function incidents(c: SiteContent): string {
+  const statsBlock = yearlyStatsTable(c.yearlyStats);
+
   if (c.incidents.length === 0) {
     return pageHero("Einsätze", "Dokumentierte Einsätze und Übungen der Fachgruppe.") +
       `<section class="wrap card"><p class="news-empty">Hier sind noch keine Einsätze ` +
       `veröffentlicht. Aktuelle Einsatzberichte der Feuerwehr Biebertal erscheinen zeitnah ` +
       `über den Instagram- und den WhatsApp-Kanal.</p>` +
-      `<p><a class="redtext" href="https://www.feuerwehr-biebertal.de/">Zur Feuerwehr Biebertal →</a></p></section>`;
+      `<p><a class="redtext" href="https://www.feuerwehr-biebertal.de/">Zur Feuerwehr Biebertal →</a></p>` +
+      statsBlock +
+      `</section>`;
   }
 
-  const list = c.incidents
-    .map(
-      (i) =>
-        `<article class="card incident">${imgTag(i.image, "")}<div><span class="badge">${e(i.category)}</span>` +
-        `<h2><a href="/einsaetze/${e(i.id)}">${e(i.title)}</a></h2>` +
-        `<p><b>${e(formatDate(i.date))}</b> · ${e(i.place)} · ${e(i.status)}</p><p>${e(i.description)}</p></div></article>`,
-    )
-    .join("");
+  const currentYear = new Date().getUTCFullYear();
+  const numbers = incidentNumbers(c);
+  const years = incidentYears(c);
+  const current = incidentsInYear(c, currentYear).map((i) => incidentCard(i, numbers)).join("");
+  const archiveYears = years.filter((year) => year !== currentYear);
+
+  const archive = archiveYears.length === 0
+    ? ""
+    : `<div id="archiv"><h2 class="section-title" style="margin-top:32px">Archiv</h2>` +
+      archiveYears
+        .map(
+          (year) =>
+            `<details class="archive-year"><summary>${year} ` +
+            `<span class="archive-count">(${incidentsInYear(c, year).length} Einsätze)</span></summary>` +
+            `<div class="list">${incidentsInYear(c, year).map((i) => incidentCard(i, numbers)).join("")}</div></details>`,
+        )
+        .join("") +
+      `</div>`;
+
   return pageHero("Einsätze", "Übersicht der dokumentierten Einsätze und Übungen.") +
-    `<section class="wrap list">${list}</section>`;
+    `<section class="wrap">` +
+    `<h2 class="section-title">${currentYear}</h2>` +
+    (current === ""
+      ? `<p class="news-empty">In diesem Jahr sind noch keine Einsätze veröffentlicht.</p>`
+      : `<div class="list">${current}</div>`) +
+    archive +
+    statsBlock +
+    `</section>`;
 }
 
 export function incidentDetail(c: SiteContent, id: string): string | null {
   const incident = c.incidents.find((entry) => entry.id === id);
   if (!incident) return null;
 
+  const number = incidentNumbers(c).get(incident.id);
   return (
     pageHero(incident.title, `${formatDate(incident.date)} · ${incident.place}`) +
     `<section class="wrap card">${imgTag(incident.image, "equip-img")}` +
-    `<p><span class="badge">${e(incident.category)}</span> Status: ${e(incident.status)}` +
+    `<p>` +
+    (number ? `<span class="badge badge-number">Einsatz ${e(number)}</span> ` : "") +
+    `<span class="badge">${e(incident.category)}</span>` +
+    (incident.unit === "drohne" ? ` <span class="badge badge-drone">DROHNE IM EINSATZ</span>` : "") +
+    ` Status: ${e(incident.status)}` +
     `${incident.duration ? ` · Dauer: ${e(incident.duration)}` : ""}</p>` +
     `<p>${e(incident.description)}</p>` +
+    (safeUrl(incident.source) !== "" ? `<p class="news-empty"><a class="redtext" href="${safeUrl(incident.source)}" rel="noopener noreferrer" target="_blank">Quelle / weitere Informationen →</a></p>` : "") +
     `<p><a class="redtext" href="/einsaetze">← Alle Einsätze</a></p></section>`
   );
 }
