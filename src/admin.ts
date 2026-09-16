@@ -102,6 +102,8 @@ function renderDashboard(
     `<input name="place" placeholder="Ort" required>` +
     `<select name="category"><option>Personensuche</option><option>Lageerkundung</option>` +
     `<option>Wärmebild</option><option>Dokumentation</option></select>` +
+    `<select name="unit"><option value="feuerwehr">Feuerwehr (allgemein)</option>` +
+    `<option value="drohne">Fachgruppe Drohne im Einsatz</option></select>` +
     `<input name="duration" placeholder="Dauer"><input name="image" type="url" placeholder="Bild-URL (https://…)">` +
     `<textarea name="description" placeholder="Beschreibung" style="grid-column:1/-1" required></textarea>` +
     `<button class="btn red">Speichern</button></form></div>` +
@@ -178,6 +180,8 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
   // Nur http(s) zulassen; eine javascript:-URL darf nicht ins src-Attribut wandern.
   if (image !== "" && !/^https?:\/\//i.test(image)) return redirect("/admin?error=validation");
 
+  const unit = String(form.get("unit") ?? "feuerwehr");
+
   const incident: Incident = {
     id: uniqueSlug(title, content.incidents.map((entry) => entry.id)),
     title,
@@ -185,6 +189,7 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
     place: String(form.get("place") ?? "").trim(),
     category: String(form.get("category") ?? "Lageerkundung"),
     status: "abgeschlossen",
+    unit: unit === "drohne" ? "drohne" : "feuerwehr",
     duration: String(form.get("duration") ?? "").trim(),
     image: image !== "" ? image : "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
     description: String(form.get("description") ?? "").trim(),

@@ -1,4 +1,4 @@
-import { sortedNews, type SiteContent } from "./content.ts";
+import { droneIncidents, sortedIncidents, sortedNews, type Incident, type SiteContent } from "./content.ts";
 import { e, formatDate, initials } from "./html.ts";
 import { imgTag, pageHero } from "./layout.ts";
 
@@ -14,6 +14,42 @@ function personRole(member: { role: string; qualification?: string }): string {
   return e(member.role) + (qualification !== "" ? `<br>${e(qualification)}` : "");
 }
 
+/** Status als sprechendes Kürzel für die Ticker-Badge. */
+function tickerStatusLabel(status: string): string {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "" || normalized === "abgeschlossen") return "Beendet";
+  if (normalized === "laufend" || normalized === "im einsatz") return "Läuft";
+  return status;
+}
+
+/** Eine Zeile im Einsatzticker: Status-Punkt, Zeit/Ort, Titel, Kategorie. */
+function tickerRow(i: Incident): string {
+  const status = tickerStatusLabel(i.status);
+  const live = status === "Läuft";
+  return (
+    `<a class="ticker-row${live ? " ticker-row-live" : ""}" href="/einsaetze/${e(i.id)}">` +
+    `<span class="ticker-dot" aria-hidden="true"></span>` +
+    `<span class="ticker-main">` +
+    `<span class="ticker-meta"><b>${e(formatDate(i.date))}</b> · ${e(i.place)}` +
+    `<span class="ticker-status ${live ? "ticker-status-live" : ""}">${e(status)}</span></span>` +
+    `<span class="ticker-title">${e(i.title)}</span>` +
+    `</span><span class="badge ticker-badge">${e(i.category)}</span></a>`
+  );
+}
+
+/** Ein Ticker-Panel mit Überschrift, Live-Indikator und bis zu `limit` Zeilen. */
+function tickerPanel(title: string, subtitle: string, items: Incident[], emptyText: string, limit = 5): string {
+  const rows = items.length === 0
+    ? `<p class="news-empty">${e(emptyText)}</p>`
+    : items.slice(0, limit).map(tickerRow).join("");
+  return (
+    `<div class="ticker-panel"><div class="ticker-head">` +
+    `<span class="ticker-live-dot" aria-hidden="true"></span>` +
+    `<div><h3>${e(title)}</h3><p>${e(subtitle)}</p></div></div>` +
+    `<div class="ticker-list">${rows}</div></div>`
+  );
+}
+
 export function home(c: SiteContent): string {
   const primary = c.equipment[0];
   const areas = c.areas
@@ -24,18 +60,6 @@ export function home(c: SiteContent): string {
     )
     .join("");
 
-  const incidentCards = c.incidents.length === 0
-    ? `<p class="news-empty">Einsatzberichte veröffentlichen wir über die Kanäle der ` +
-      `Feuerwehr Biebertal.</p>`
-    : c.incidents
-        .map(
-          (i) =>
-            `<a class="incident" href="/einsaetze/${e(i.id)}">${imgTag(i.image, "")}` +
-            `<div><span class="badge">EINSATZ</span><small style="float:right">${e(formatDate(i.date))}</small>` +
-            `<b style="display:block">${e(i.title)}</b><span>${e(i.place)}</span><p>${e(i.description)}</p></div></a>`,
-        )
-        .join("");
-
   const teamCards = sortedTeam(c)
     .map((m) => `<div>${personAvatar(m)}<b>${e(m.name)}</b><p>${personRole(m)}</p></div>`)
     .join("");
@@ -44,6 +68,23 @@ export function home(c: SiteContent): string {
     ? `${imgTag(primary.image, "equip-img", primary.name)}<h3>${e(primary.name)}</h3>` +
       `<ul class="features">${primary.features.map((f) => `<li>${e(f)}</li>`).join("")}</ul>`
     : "<p>Noch keine Technik erfasst.</p>";
+
+  const einsatzticker =
+    `<section class="wrap"><h2 class="section-title">Einsatzticker</h2>` +
+    `<div class="grid ticker-grid">` +
+    tickerPanel(
+      "Feuerwehr Biebertal",
+      "Alle dokumentierten Einsätze",
+      sortedIncidents(c),
+      "Derzeit sind keine Einsätze veröffentlicht.",
+    ) +
+    tickerPanel(
+      "Fachgruppe Drohne",
+      "Einsätze mit Drohnenunterstützung",
+      droneIncidents(c),
+      "Die Drohne war zuletzt bei keinem veröffentlichten Einsatz im Einsatz.",
+    ) +
+    `</div><p><a class="redtext" href="/einsaetze">Alle Einsätze ansehen →</a></p></section>`;
 
   const latestNews = sortedNews(c).slice(0, 3);
   const newsTeaser = latestNews.length === 0
@@ -64,12 +105,11 @@ export function home(c: SiteContent): string {
     `<h1>${e(c.pages.heroHeadline)}</h1><p>${e(c.pages.heroSubline)}</p>` +
     `<p><a class="btn red" href="/technik">Mehr erfahren</a> <a class="btn" href="/einsaetze">Aktuelle Einsätze</a></p>` +
     `</div></section>` +
+    einsatzticker +
     `<section class="wrap"><h2 class="section-title">Unsere Einsatzbereiche</h2>` +
     `<div class="grid cards4">${areas}</div></section>` +
     newsTeaser +
-    `<section class="wrap grid cols3">` +
-    `<div class="card"><h2 class="section-title">Aktuelle Einsätze</h2>${incidentCards}` +
-    `<a class="redtext" href="/einsaetze">Alle Einsätze ansehen →</a></div>` +
+    `<section class="wrap grid cards4">` +
     `<div class="card"><h2 class="section-title">Unser Team</h2><div class="grid teamgrid">${teamCards}</div>` +
     `<a class="redtext" href="/team">Mehr über unser Team →</a></div>` +
     `<div class="card"><h2 class="section-title">Unsere Technik</h2>${equipmentCard}` +
@@ -95,10 +135,11 @@ export function incidents(c: SiteContent): string {
       `<p><a class="redtext" href="https://www.feuerwehr-biebertal.de/">Zur Feuerwehr Biebertal →</a></p></section>`;
   }
 
-  const list = c.incidents
+  const list = sortedIncidents(c)
     .map(
       (i) =>
         `<article class="card incident">${imgTag(i.image, "")}<div><span class="badge">${e(i.category)}</span>` +
+        (i.unit === "drohne" ? ` <span class="badge badge-drone">DROHNE IM EINSATZ</span>` : "") +
         `<h2><a href="/einsaetze/${e(i.id)}">${e(i.title)}</a></h2>` +
         `<p><b>${e(formatDate(i.date))}</b> · ${e(i.place)} · ${e(i.status)}</p><p>${e(i.description)}</p></div></article>`,
     )
@@ -114,7 +155,9 @@ export function incidentDetail(c: SiteContent, id: string): string | null {
   return (
     pageHero(incident.title, `${formatDate(incident.date)} · ${incident.place}`) +
     `<section class="wrap card">${imgTag(incident.image, "equip-img")}` +
-    `<p><span class="badge">${e(incident.category)}</span> Status: ${e(incident.status)}` +
+    `<p><span class="badge">${e(incident.category)}</span>` +
+    (incident.unit === "drohne" ? ` <span class="badge badge-drone">DROHNE IM EINSATZ</span>` : "") +
+    ` Status: ${e(incident.status)}` +
     `${incident.duration ? ` · Dauer: ${e(incident.duration)}` : ""}</p>` +
     `<p>${e(incident.description)}</p>` +
     `<p><a class="redtext" href="/einsaetze">← Alle Einsätze</a></p></section>`

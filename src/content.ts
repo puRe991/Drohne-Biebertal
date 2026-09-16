@@ -6,6 +6,9 @@ import type { ContentStore } from "./store.ts";
  * Inhaltsmodell. data/site.json bleibt die versionierte Auslieferungsfassung und
  * dient als Seed; die Redaktion arbeitet danach auf der gespeicherten Kopie.
  */
+/** "feuerwehr" = allgemeiner Feuerwehreinsatz, "drohne" = Einsatz mit Beteiligung der Fachgruppe Drohne. */
+export type IncidentUnit = "feuerwehr" | "drohne";
+
 export interface Incident {
   id: string;
   title: string;
@@ -16,6 +19,8 @@ export interface Incident {
   image: string;
   description: string;
   duration?: string;
+  /** Fehlt das Feld bei älteren Datenständen, gilt der Einsatz als allgemeiner Feuerwehreinsatz. */
+  unit?: IncidentUnit;
 }
 
 export interface NewsEntry {
@@ -144,6 +149,9 @@ export function validateContent(data: unknown): SiteContent {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(incident.date))) {
       throw new ContentError(`Einsatzdatum muss YYYY-MM-DD sein: ${String(incident.date)}`);
     }
+    if (incident.unit !== undefined && incident.unit !== "feuerwehr" && incident.unit !== "drohne") {
+      throw new ContentError(`Einsatz-Einheit muss "feuerwehr" oder "drohne" sein: ${String(incident.unit)}`);
+    }
     if (seen.has(id)) throw new ContentError(`Einsatz-ID ist doppelt vergeben: ${id}`);
     seen.add(id);
   }
@@ -193,4 +201,14 @@ export async function storeInfo(env: Env): Promise<{ revision: number; updatedAt
 /** Meldungen nach Datum, neueste zuerst. */
 export function sortedNews(content: SiteContent): NewsEntry[] {
   return [...content.news].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Einsätze nach Datum, neueste zuerst. */
+export function sortedIncidents(content: SiteContent): Incident[] {
+  return [...content.incidents].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Nur Einsätze mit Beteiligung der Fachgruppe Drohne, neueste zuerst. */
+export function droneIncidents(content: SiteContent): Incident[] {
+  return sortedIncidents(content).filter((entry) => entry.unit === "drohne");
 }
