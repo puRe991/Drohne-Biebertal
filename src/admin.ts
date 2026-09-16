@@ -105,6 +105,7 @@ function renderDashboard(
     `<select name="unit"><option value="feuerwehr">Feuerwehr (allgemein)</option>` +
     `<option value="drohne">Fachgruppe Drohne im Einsatz</option></select>` +
     `<input name="duration" placeholder="Dauer"><input name="image" type="url" placeholder="Bild-URL (https://…)">` +
+    `<input name="source" type="url" placeholder="Beleg-URL (Pressebericht, optional)" style="grid-column:1/-1">` +
     `<textarea name="description" placeholder="Beschreibung" style="grid-column:1/-1" required></textarea>` +
     `<button class="btn red">Speichern</button></form></div>` +
     `<div id="json" class="card" style="margin-top:24px"><h2>Redaktionelle Inhalte bearbeiten</h2>` +
@@ -182,6 +183,9 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
 
   const unit = String(form.get("unit") ?? "feuerwehr");
 
+  const source = String(form.get("source") ?? "").trim();
+  if (source !== "" && !/^https?:\/\//i.test(source)) return redirect("/admin?error=validation");
+
   const incident: Incident = {
     id: uniqueSlug(title, content.incidents.map((entry) => entry.id)),
     title,
@@ -191,6 +195,7 @@ async function addIncident(env: Env, form: FormData, user: SessionUser): Promise
     status: "abgeschlossen",
     unit: unit === "drohne" ? "drohne" : "feuerwehr",
     duration: String(form.get("duration") ?? "").trim(),
+    ...(source !== "" ? { source } : {}),
     image: image !== "" ? image : "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
     description: String(form.get("description") ?? "").trim(),
   };
