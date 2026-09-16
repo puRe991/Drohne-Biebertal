@@ -72,7 +72,34 @@
       "image": ""
     }
   ],
-  "incidents": [],
+  "incidents": [
+    {
+      "id": "ausgeloester-rauchwarnmelder-fellingshausen",
+      "title": "Ausgelöster Rauchwarnmelder",
+      "date": "2026-09-06",
+      "place": "Fellingshausen",
+      "category": "Brandmeldealarm",
+      "status": "abgeschlossen",
+      "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+      "description": "In der Nacht auf Sonntag wurden wir zu einem ausgelösten Rauchmelder nach Fellingshausen alarmiert (Schutzbereich Mitte mit Hygienekomponente West, Gemeindebrandinspektor und Einsatzleiter vom Dienst, dazu Polizei und Rettungsdienst). Vor Ort konnte zum Glück schnell Entwarnung gegeben werden, sodass der Einsatz schnell beendet werden konnte.",
+      "unit": "feuerwehr",
+      "source": "https://whatsapp.com/channel/0029Vb3YTdkBKfhsXfpTNe2X",
+      "number": "61/2026"
+    },
+    {
+      "id": "auslaufende-betriebsstoffe-krumbach",
+      "title": "Auslaufende Betriebsstoffe nach Alleinunfall",
+      "date": "2026-09-13",
+      "place": "Krumbach",
+      "category": "Technische Hilfeleistung",
+      "status": "abgeschlossen",
+      "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+      "description": "Am Sonntagmittag wurden wir zu einem Alleinunfall nach Krumbach alarmiert (Schutzbereich Nord, Einsatzleitwagen Biebertal, Einsatzleiter vom Dienst, dazu Polizei und Hessen Mobil). Vor Ort nahmen wir auslaufende Betriebsstoffe auf und kümmerten uns um die beschädigte Fahrzeugbatterie.",
+      "unit": "feuerwehr",
+      "source": "https://whatsapp.com/channel/0029Vb3YTdkBKfhsXfpTNe2X",
+      "number": "64/2026"
+    }
+  ],
   "team": [
     {
       "name": "Florian Clever",

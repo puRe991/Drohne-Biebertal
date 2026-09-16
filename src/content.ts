@@ -23,6 +23,13 @@ export interface Incident {
   unit?: IncidentUnit;
   /** Beleg-URL, z. B. Pressebericht - macht einen Einsatzeintrag nachprüfbar. */
   source?: string;
+  /**
+   * Amtliche Einsatznummer der Feuerwehr, z. B. "64/2026" - so wie im EINSATZINFO-Kanal
+   * veröffentlicht. Bewusst kein selbst gezählter Wert: die Redaktion erfasst nie alle
+   * Einsätze eines Jahres, ein hier errechneter Zähler würde von der echten, öffentlich
+   * kommunizierten Nummer abweichen und wäre irreführend.
+   */
+  number?: string;
 }
 
 /** Amtliche Jahresstatistik, z. B. aus Berichten der Jahreshauptversammlung. */
@@ -164,6 +171,13 @@ export function validateContent(data: unknown): SiteContent {
     if (incident.unit !== undefined && incident.unit !== "feuerwehr" && incident.unit !== "drohne") {
       throw new ContentError(`Einsatz-Einheit muss "feuerwehr" oder "drohne" sein: ${String(incident.unit)}`);
     }
+    if (incident.number !== undefined) {
+      const match = /^\d+\/(\d{4})$/.exec(String(incident.number));
+      if (!match) throw new ContentError(`Einsatznummer muss dem Muster "61/2026" folgen: ${String(incident.number)}`);
+      if (match[1] !== String(incident.date).slice(0, 4)) {
+        throw new ContentError(`Einsatznummer ${String(incident.number)} passt nicht zum Jahr des Einsatzdatums.`);
+      }
+    }
     if (seen.has(id)) throw new ContentError(`Einsatz-ID ist doppelt vergeben: ${id}`);
     seen.add(id);
   }
@@ -245,21 +259,15 @@ export function incidentYear(incident: Incident): number {
 }
 
 /**
- * Laufende Einsatznummer innerhalb des Jahres, z. B. "3/2026" - chronologisch
- * nach Datum gezählt, wie im Einsatzbericht der Feuerwehr üblich.
+ * Amtliche Einsatznummern, wie im EINSATZINFO-Kanal der Feuerwehr veröffentlicht
+ * (z. B. "64/2026"). Nur Einsätze mit erfasster Nummer tauchen hier auf - ein
+ * selbst gezählter Ersatzwert würde von der echten Zählung abweichen, sobald
+ * nicht jeder Einsatz des Jahres auf dieser Seite steht.
  */
 export function incidentNumbers(content: SiteContent): Map<string, string> {
-  const byYear = new Map<number, Incident[]>();
-  for (const incident of content.incidents) {
-    const year = incidentYear(incident);
-    const list = byYear.get(year) ?? [];
-    list.push(incident);
-    byYear.set(year, list);
-  }
   const numbers = new Map<string, string>();
-  for (const [year, list] of byYear) {
-    const chronological = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
-    chronological.forEach((incident, index) => numbers.set(incident.id, `${index + 1}/${year}`));
+  for (const incident of content.incidents) {
+    if (incident.number) numbers.set(incident.id, incident.number);
   }
   return numbers;
 }
