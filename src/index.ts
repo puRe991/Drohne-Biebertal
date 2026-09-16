@@ -154,10 +154,10 @@ async function adminPage(
 
 async function readiness(env: Env): Promise<Response> {
   const problems = configProblems(env);
-  let revision: number | null = null;
+  let content: Awaited<ReturnType<typeof storeInfo>> | null = null;
 
   try {
-    revision = (await storeInfo(env)).revision;
+    content = await storeInfo(env);
   } catch (error) {
     problems.push(
       `Inhaltsspeicher nicht erreichbar: ${error instanceof Error ? error.message : String(error)}`,
@@ -170,7 +170,9 @@ async function readiness(env: Env): Promise<Response> {
     env: appEnv(env),
     version: appVersion(env),
     store: "durable-object",
-    revision,
+    // "auslieferung" = data/site.json ist weiterhin die Quelle,
+    // "redaktion" = im Backend gespeicherte Inhalte haben Vorrang.
+    content,
     problems,
   });
 }

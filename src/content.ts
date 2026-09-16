@@ -80,12 +80,13 @@ export class ContentError extends Error {}
 
 /**
  * Stub der einen Instanz, über die alle Inhalte laufen.
- * Bewusst hier und nicht in store.ts: dieses Modul soll ohne die
- * Worker-Laufzeit importierbar bleiben.
+ * Bewusst hier und nicht in store.ts: dieses Modul soll ohne die Worker-Laufzeit
+ * importierbar bleiben, damit die Unit-Tests unter Node laufen.
  */
 function contentStore(env: Env): DurableObjectStub<ContentStore> {
   return env.CONTENT.get(env.CONTENT.idFromName("site"));
 }
+
 
 export function seedContent(): SiteContent {
   // Strukturierte Kopie, damit Aufrufer das importierte Modul nicht verändern.
@@ -203,23 +204,65 @@ export function validateContent(data: unknown): SiteContent {
  * Liest die gespeicherten Inhalte. Ist der Speicher noch leer - typisch direkt nach dem
  * ersten Deploy - werden die Seed-Inhalte übernommen.
  */
-export async function loadContent(env: Env): Promise<SiteContent> {
-  const stored = await contentStore(env).load();
+/** Fingerabdruck der Auslieferungsfassung, um Änderungen am Repository zu erkennen. */
+export async function fingerprint(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
-  if (stored !== null) {
-    try {
-      return validateContent(JSON.parse(stored));
-    } catch (error) {
-      throw new ContentError(
-        `Gespeicherte Inhalte sind unbrauchbar: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+/**
+ * Entscheidet, ob die Auslieferungsfassung eingespielt wird.
+ *
+ *  - "erstbefuellung": Der Speicher ist leer.
+ *  - "aktualisieren":  Es wurde nur geseedet und data/site.json hat sich geändert;
+ *                      das Repository bleibt bis zur ersten Bearbeitung die Quelle.
+ *  - "redaktion-behalten": Die Redaktion hat gespeichert. Ihre Fassung gewinnt
+ *                      immer - ein Deployment darf redaktionelle Arbeit niemals
+ *                      überschreiben.
+ */
+export type SeedDecision = "erstbefuellung" | "aktualisieren" | "unveraendert" | "redaktion-behalten";
+
+export function seedDecision(
+  stored: { payload: string | null; updatedBy: string; seedFingerprint: string | null },
+  seedPrint: string,
+): SeedDecision {
+  if (stored.payload === null) return "erstbefuellung";
+  if (stored.updatedBy !== "seed") return "redaktion-behalten";
+  return stored.seedFingerprint === seedPrint ? "unveraendert" : "aktualisieren";
+}
+
+export async function loadContent(env: Env): Promise<SiteContent> {
+  const store = contentStore(env);
+  const stored = await store.read();
+  const seed = encodeContent(validateContent(seedContent()));
+  const seedPrint = await fingerprint(seed);
+  const decision = seedDecision(stored, seedPrint);
+
+  if (decision === "erstbefuellung" || decision === "aktualisieren") {
+    await store.save(seed, "seed", seedPrint);
+    console.info(JSON.stringify({
+      level: "info",
+      message: decision === "erstbefuellung"
+        ? "Inhaltsspeicher war leer und wurde aus data/site.json befüllt."
+        : "Auslieferungsfassung hat sich geändert und wurde übernommen (noch keine Bearbeitung im Backend).",
+    }));
+    return validateContent(JSON.parse(seed));
   }
 
-  // Erster Aufruf nach dem Deploy: Auslieferungsfassung übernehmen.
-  const content = validateContent(seedContent());
-  await saveContent(env, content, "seed");
-  return content;
+  if (decision === "redaktion-behalten" && stored.seedFingerprint !== seedPrint) {
+    console.info(JSON.stringify({
+      level: "info",
+      message: "data/site.json weicht von den redaktionellen Inhalten ab und wird nicht übernommen.",
+    }));
+  }
+
+  try {
+    return validateContent(JSON.parse(stored.payload as string));
+  } catch (error) {
+    throw new ContentError(
+      `Gespeicherte Inhalte sind unbrauchbar: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 export async function saveContent(env: Env, data: unknown, author: string): Promise<SiteContent> {
@@ -233,9 +276,17 @@ export function encodeContent(content: SiteContent): string {
 }
 
 /** Metadaten des Speichers für die Readiness-Prüfung. */
-export async function storeInfo(env: Env): Promise<{ revision: number; updatedAt: string | null }> {
-  const info = await contentStore(env).info();
-  return { revision: info.revision, updatedAt: info.updatedAt };
+export async function storeInfo(env: Env): Promise<{
+  revision: number;
+  updatedAt: string | null;
+  source: "auslieferung" | "redaktion";
+}> {
+  const stored = await contentStore(env).read();
+  return {
+    revision: stored.revision,
+    updatedAt: stored.updatedAt,
+    source: stored.updatedBy === "seed" ? "auslieferung" : "redaktion",
+  };
 }
 
 /** Meldungen nach Datum, neueste zuerst. */
