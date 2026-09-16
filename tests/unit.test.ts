@@ -232,9 +232,16 @@ describe("Team", () => {
     expect(initials("")).toBe("?");
   });
 
-  it("führt die aktuelle Besetzung ohne fremde Fotos", () => {
+  it("führt alle sechs Mitglieder ohne fremde Fotos", () => {
     const { team } = seedContent();
-    expect(team.map((m) => m.name)).toEqual(["Sebastian K.", "Lukas M.", "Jan R.", "Tobias H."]);
+    expect(team.map((m) => m.name)).toEqual([
+      "Florian Clever",
+      "Michele Schuster",
+      "Maurice Kunz",
+      "Tim Antosch",
+      "Markus Hofmann",
+      "Sebastian Hose",
+    ]);
     // Kein Eintrag darf ein Stockfoto einer fremden Person tragen.
     expect(team.every((m) => (m.image ?? "") === "")).toBe(true);
   });

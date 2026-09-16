@@ -102,31 +102,45 @@
   ],
   "team": [
     {
-      "name": "Sebastian K.",
-      "role": "Gruppenführer",
-      "qualification": "BOS-Drohnenpilot",
+      "name": "Florian Clever",
+      "role": "Drohnenpilot",
+      "qualification": "Ausbilder",
       "order": 1,
       "image": ""
     },
     {
-      "name": "Lukas M.",
-      "role": "Stellv. Gruppenführer",
-      "qualification": "BOS-Drohnenpilot",
+      "name": "Michele Schuster",
+      "role": "Drohnenpilot",
+      "qualification": "Ausbilderin",
       "order": 2,
       "image": ""
     },
     {
-      "name": "Jan R.",
+      "name": "Maurice Kunz",
       "role": "Drohnenpilot",
-      "qualification": "Wärmebild-Spezialist",
+      "qualification": "Ausbilder",
       "order": 3,
       "image": ""
     },
     {
-      "name": "Tobias H.",
-      "role": "Technik & Auswertung",
-      "qualification": "Drohnenpilot",
+      "name": "Tim Antosch",
+      "role": "Drohnenpilot",
+      "qualification": "",
       "order": 4,
+      "image": ""
+    },
+    {
+      "name": "Markus Hofmann",
+      "role": "Drohnenpilot",
+      "qualification": "",
+      "order": 5,
+      "image": ""
+    },
+    {
+      "name": "Sebastian Hose",
+      "role": "Drohnenpilot",
+      "qualification": "Gruppenführer",
+      "order": 6,
       "image": ""
     }
   ],
