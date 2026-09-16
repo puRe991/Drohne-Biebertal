@@ -13,7 +13,15 @@ import {
   verifyLogin,
   verifyPassword,
 } from "../src/auth.ts";
-import { seedContent, sortedNews, validateContent, ContentError } from "../src/content.ts";
+import {
+  incidentNumbers,
+  incidentYears,
+  incidentsInYear,
+  seedContent,
+  sortedNews,
+  validateContent,
+  ContentError,
+} from "../src/content.ts";
 import { configProblems, type Env } from "../src/env.ts";
 import { e, formatDate, initials, safeUrl, slugify, uniqueSlug } from "../src/html.ts";
 
@@ -111,6 +119,43 @@ describe("Inhaltsvalidierung", () => {
 
   it("weist Listen an Objektstellen ab", () => {
     expect(() => validateContent([])).toThrow(ContentError);
+  });
+
+  it("erkennt ungültige Einsatz-Einheit", () => {
+    const data = seedContent();
+    data.incidents = [incident({ unit: "sonstiges" })];
+    expect(() => validateContent(data)).toThrow(/Einheit/);
+  });
+
+  it("erkennt doppelte Jahresstatistik-Jahre", () => {
+    const data = seedContent();
+    data.yearlyStats = [{ year: 2024, total: 1 }, { year: 2024, total: 2 }];
+    expect(() => validateContent(data)).toThrow(/doppelt/);
+  });
+});
+
+describe("Einsatznummern und Archiv", () => {
+  it("zählt Einsätze pro Jahr chronologisch hoch", () => {
+    const data = seedContent();
+    data.incidents = [
+      incident({ id: "a", date: "2026-03-01" }),
+      incident({ id: "b", date: "2026-01-10", title: "Erster im Jahr" }),
+      incident({ id: "c", date: "2025-12-01", title: "Vorjahr" }),
+    ];
+    const numbers = incidentNumbers(data);
+    expect(numbers.get("b")).toBe("1/2026");
+    expect(numbers.get("a")).toBe("2/2026");
+    expect(numbers.get("c")).toBe("1/2025");
+  });
+
+  it("gruppiert Einsätze nach Jahr für das Archiv", () => {
+    const data = seedContent();
+    data.incidents = [
+      incident({ id: "a", date: "2026-03-01" }),
+      incident({ id: "c", date: "2025-12-01", title: "Vorjahr" }),
+    ];
+    expect(incidentYears(data)).toEqual([2026, 2025]);
+    expect(incidentsInYear(data, 2025).map((i) => i.id)).toEqual(["c"]);
   });
 });
 

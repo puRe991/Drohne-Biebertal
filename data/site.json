@@ -142,5 +142,25 @@
       "image": ""
     }
   ],
-  "gallery": []
+  "gallery": [],
+  "yearlyStats": [
+    {
+      "year": 2022,
+      "total": 63,
+      "note": "Gesamteinsätze der Freiwilligen Feuerwehr Biebertal (alle Löschzüge).",
+      "source": "https://www.giessener-anzeiger.de/lokales/biebertal-ort848760/rekordjahr-mit-104-einsaetzen-fuer-ffw-biebertal-92877611.html"
+    },
+    {
+      "year": 2023,
+      "total": 104,
+      "note": "Rekordjahr: 4.648 Personalstunden, u. a. zwei Brände im Lohacker (Rodheim und Bieber) sowie überörtliche Unterstützung beim Großbrand in Hohenahr-Erda.",
+      "source": "https://www.giessener-anzeiger.de/lokales/biebertal-ort848760/rekordjahr-mit-104-einsaetzen-fuer-ffw-biebertal-92877611.html"
+    },
+    {
+      "year": 2024,
+      "total": 92,
+      "note": "6 Einsätze mehr als 2023, bei 4.612 geleisteten Personalstunden.",
+      "source": "https://www.giessener-anzeiger.de/lokales/biebertal-ort848760/4612-stunden-mit-weniger-personal-geleistet-93627638.html"
+    }
+  ]
 }
