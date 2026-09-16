@@ -135,17 +135,29 @@ describe("Inhaltsvalidierung", () => {
 });
 
 describe("Einsatznummern und Archiv", () => {
-  it("zählt Einsätze pro Jahr chronologisch hoch", () => {
+  it("übernimmt nur die amtlich erfasste Einsatznummer, ohne eigene Zählung", () => {
     const data = seedContent();
     data.incidents = [
-      incident({ id: "a", date: "2026-03-01" }),
-      incident({ id: "b", date: "2026-01-10", title: "Erster im Jahr" }),
-      incident({ id: "c", date: "2025-12-01", title: "Vorjahr" }),
+      incident({ id: "a", date: "2026-03-01", number: "61/2026" }),
+      incident({ id: "b", date: "2026-01-10", title: "Ohne Nummer" }),
+      incident({ id: "c", date: "2025-12-01", title: "Vorjahr", number: "12/2025" }),
     ];
     const numbers = incidentNumbers(data);
-    expect(numbers.get("b")).toBe("1/2026");
-    expect(numbers.get("a")).toBe("2/2026");
-    expect(numbers.get("c")).toBe("1/2025");
+    expect(numbers.get("a")).toBe("61/2026");
+    expect(numbers.has("b")).toBe(false);
+    expect(numbers.get("c")).toBe("12/2025");
+  });
+
+  it("weist eine Einsatznummer ab, die nicht zum Jahr des Datums passt", () => {
+    const data = seedContent();
+    data.incidents = [incident({ number: "5/2025", date: "2026-01-10" })];
+    expect(() => validateContent(data)).toThrow(/passt nicht zum Jahr/);
+  });
+
+  it("weist ein falsches Einsatznummer-Format ab", () => {
+    const data = seedContent();
+    data.incidents = [incident({ number: "abc" })];
+    expect(() => validateContent(data)).toThrow(/Muster/);
   });
 
   it("gruppiert Einsätze nach Jahr für das Archiv", () => {
@@ -220,16 +232,9 @@ describe("Team", () => {
     expect(initials("")).toBe("?");
   });
 
-  it("führt alle sechs Mitglieder ohne fremde Fotos", () => {
+  it("führt die aktuelle Besetzung ohne fremde Fotos", () => {
     const { team } = seedContent();
-    expect(team.map((m) => m.name)).toEqual([
-      "Florian Clever",
-      "Michele Schuster",
-      "Maurice Kunz",
-      "Tim Antosch",
-      "Markus Hofmann",
-      "Sebastian Hose",
-    ]);
+    expect(team.map((m) => m.name)).toEqual(["Sebastian K.", "Lukas M.", "Jan R.", "Tobias H."]);
     // Kein Eintrag darf ein Stockfoto einer fremden Person tragen.
     expect(team.every((m) => (m.image ?? "") === "")).toBe(true);
   });
@@ -250,10 +255,18 @@ describe("Redaktionelle Auslieferungsinhalte", () => {
     expect(socials.every((url) => url.startsWith("https://"))).toBe(true);
   });
 
-  it("enthält keine erfundenen Einsätze oder Galeriebilder", () => {
+  it("enthält keine erfundenen Galeriebilder", () => {
     const data = seedContent();
-    expect(data.incidents).toEqual([]);
     expect(data.gallery).toEqual([]);
+  });
+
+  it("belegt jeden ausgelieferten Einsatz mit einer Quelle und amtlichen Nummer", () => {
+    const data = seedContent();
+    expect(data.incidents.length).toBeGreaterThan(0);
+    for (const entry of data.incidents) {
+      expect(entry.source, `Einsatz ${entry.id} ohne Quelle`).toBeTruthy();
+      expect(entry.number, `Einsatz ${entry.id} ohne amtliche Nummer`).toBeTruthy();
+    }
   });
 
   it("liefert gültige Meldungen aus", () => {
